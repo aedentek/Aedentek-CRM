@@ -37,14 +37,39 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 10000;
 
-app.use(cors());
+// Enhanced CORS configuration for production
+app.use(cors({
+  origin: [
+    'https://admin.gandhibaideaddictioncenter.com',
+    'https://crm.gandhibaideaddictioncenter.com', 
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Add request logging middleware
+// Enhanced request logging middleware
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  console.log(`📍 Origin: ${req.get('Origin') || 'No Origin'}`);
+  console.log(`📋 User-Agent: ${req.get('User-Agent')?.substring(0, 50) || 'No UA'}...`);
   next();
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('🚨 Error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: err.message,
+    path: req.path 
+  });
 });
 
 
@@ -58,6 +83,15 @@ app.use('/Photos', express.static(path.join(__dirname, 'Photos')));
 console.log('📁 Static file serving configured for uploads and photos only');
 
 console.log('⚡ Optimized MySQL pool connected to srv1639.hstgr.io');
+
+// Test database connection on startup
+db.execute('SELECT 1 as test')
+  .then(() => {
+    console.log('✅ Database connection test successful');
+  })
+  .catch((err) => {
+    console.error('❌ Database connection test failed:', err.message);
+  });
 
 
 
@@ -109,6 +143,27 @@ app.get('/api/health', (req, res) => {
     message: 'CRM API is ready',
     timestamp: new Date().toISOString(),
     endpoints: 'All API endpoints available'
+  });
+});
+
+// Catch-all for undefined API routes
+app.use('/api/*', (req, res) => {
+  console.error(`❌ 404 - API route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    error: 'API route not found', 
+    path: req.path,
+    method: req.method,
+    message: 'The requested API endpoint does not exist'
+  });
+});
+
+// Catch-all for any other undefined routes
+app.use('*', (req, res) => {
+  console.error(`❌ 404 - Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    error: 'Route not found', 
+    path: req.path,
+    method: req.method 
   });
 });
 
