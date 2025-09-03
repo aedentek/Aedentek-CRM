@@ -151,6 +151,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Simple test endpoint for frontend connectivity testing
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ 
+    status: 'SUCCESS', 
+    message: 'Frontend-Backend connection working perfectly!',
+    timestamp: new Date().toISOString(),
+    apiUrl: 'https://crm-czuu.onrender.com/api',
+    frontendUrl: 'https://admin.gandhibaideaddictioncenter.com'
+  });
+});
+
 // Catch-all for undefined API routes
 app.use('/api/*', (req, res) => {
   console.error(`❌ 404 - API route not found: ${req.method} ${req.path}`);
