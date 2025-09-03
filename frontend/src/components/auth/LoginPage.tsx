@@ -26,10 +26,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Scrolling images for the left side
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  const backendUrl = apiBaseUrl.replace('/api', ''); // Remove /api to get base backend URL
+  
   const scrollingImages = [
-    '/server/Photos/Login Scrolling/hand-with-medication-dark-style.jpg',
-    '/server/Photos/Login Scrolling/hand-with-pills-dark-environment.jpg',
-    '/server/Photos/Login Scrolling/people-meeting-support-group.jpg'
+    `${backendUrl}/Photos/Login Scrolling/hand-with-medication-dark-style.jpg`,
+    `${backendUrl}/Photos/Login Scrolling/hand-with-pills-dark-environment.jpg`,
+    `${backendUrl}/Photos/Login Scrolling/people-meeting-support-group.jpg`
   ];
 
   // Auto-scroll effect for images
