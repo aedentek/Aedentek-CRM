@@ -127,7 +127,7 @@ export const uploadPatientFile = async (
       console.log('🔍 Health check response:', healthResponse.status, healthResponse.statusText);
       if (!healthResponse.ok) {
         console.log('🔍 Trying direct backend connection...');
-        const directHealthResponse = await fetch(`${import.meta.env.VITE_API_URL}/health`, { method: 'GET' });
+        const directHealthResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/health`, { method: 'GET' });
         if (!directHealthResponse.ok) {
           throw new Error(`Backend server is not responding. Proxy: ${healthResponse.status}, Direct: ${directHealthResponse.status}`);
         }
