@@ -48,17 +48,14 @@ app.use((req, res, next) => {
 });
 
 
-// Serve static files from uploads directory
+// Serve static files from uploads directory (for file uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve static files from Photos directory (new staff photos location)
+// Serve static files from Photos directory (for staff/doctor photos)
 app.use('/Photos', express.static(path.join(__dirname, 'Photos')));
 
-// Serve static files from the frontend build (dist)
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// Fallback to index.html for SPA (must be after API routes)
-// (This will be moved to the end of the file after all routes)
+// Note: Frontend is deployed separately to Hostinger, no dist serving needed
+console.log('📁 Static file serving configured for uploads and photos only');
 
 console.log('⚡ Optimized MySQL pool connected to srv1639.hstgr.io');
 
@@ -92,12 +89,27 @@ console.log('👨‍⚕️ Staff Advance middleware registered at /api');
 console.log('💰 Doctor Salary middleware registered at /api');
 console.log('💼 Staff Salary middleware registered at /api');
 console.log('🏥 Patient Payments middleware registered at /api');
-// Fallback route to serve index.html for SPA routing (must be last)
-// app.use('/api', uploads);
+// API routes are configured above
+// Frontend is deployed separately to Hostinger, so no static file serving needed
 
-// Fallback to index.html for SPA (must be after all routes)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'CRM Backend is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API status endpoint  
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'CRM API is ready',
+    timestamp: new Date().toISOString(),
+    endpoints: 'All API endpoints available'
+  });
 });
 
 
