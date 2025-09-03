@@ -1,6 +1,6 @@
 // Centralized database service for all MySQL operations via REST API
 export class DatabaseService {
-  private static readonly apiBaseUrl = import.meta.env.VITE_API_URL;
+  private static readonly apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
   // === DOCTOR MANAGEMENT ===
   static async getAllDoctors() {
