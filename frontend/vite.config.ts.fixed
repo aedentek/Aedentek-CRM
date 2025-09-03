@@ -1,0 +1,41 @@
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }: { mode: string }) => {
+  // Load env file based on `mode` in the current working directory.
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  // Get the API URL from environment variables
+  const apiUrl = env.VITE_API_URL || 'http://localhost:4000/api';
+  // Remove '/api' from the target since it's already in VITE_API_URL
+  const baseUrl = apiUrl.replace('/api', '') || 'http://localhost:4000';
+  
+  return {
+    server: {
+      host: "localhost",
+      port: 5173,
+      proxy: {
+        '/api': {
+          target: baseUrl,
+          changeOrigin: true,
+          secure: false
+        },
+        '/Photos': {
+          target: baseUrl,
+          changeOrigin: true,
+          secure: false
+        }
+      }
+    },
+    plugins: [
+      react(),
+    ],
+    resolve: {
+      alias: {
+        "@": path.resolve(".", "src"),
+      },
+    },
+  };
+});
