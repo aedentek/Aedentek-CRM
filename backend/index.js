@@ -84,13 +84,18 @@ console.log('📁 Static file serving configured for uploads and photos only');
 
 console.log('⚡ Optimized MySQL pool connected to srv1639.hstgr.io');
 
-// Test database connection on startup
-db.execute('SELECT 1 as test')
-  .then(() => {
+// Test database connection on startup with better error handling
+db.execute('SELECT 1 as test, NOW() as timestamp')
+  .then((results) => {
     console.log('✅ Database connection test successful');
+    console.log('📊 Test result:', results[0][0]);
   })
   .catch((err) => {
-    console.error('❌ Database connection test failed:', err.message);
+    console.error('❌ Database connection test failed:');
+    console.error('   Error Code:', err.code || 'Unknown');
+    console.error('   Error Message:', err.message || 'No message');
+    console.error('   SQL State:', err.sqlState || 'Unknown');
+    console.error('   Error Number:', err.errno || 'Unknown');
   });
 
 

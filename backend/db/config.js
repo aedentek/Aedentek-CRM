@@ -13,8 +13,9 @@ const db = await mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   ssl: { rejectUnauthorized: false },
-  acquireTimeout: 60000,
-  timeout: 60000
+  // Removed problematic config options that cause warnings
+  connectTimeout: 60000,
+  idleTimeout: 60000
 });
 
 export default db;
