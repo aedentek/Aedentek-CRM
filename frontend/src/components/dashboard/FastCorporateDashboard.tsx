@@ -207,6 +207,10 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
   const [medicineStockCount, setMedicineStockCount] = useState<number>(0);
   const [leadsData, setLeadsData] = useState<any[]>([]);
 
+  // Pagination state for leads table
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5; // Show only 5 leads in dashboard
+
   // Month/Year picker state
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
@@ -262,6 +266,11 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
 
     loadDashboardData();
   }, [selectedMonth, selectedYear, toast]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterPriority, selectedMonth, selectedYear]);
 
   // Professional metrics data with real data
   const metrics = useMemo<MetricCard[]>(() => [
@@ -382,6 +391,13 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
       return statusMatch && searchMatch && monthYearMatch;
     });
   }, [leads, filterPriority, searchTerm, selectedMonth, selectedYear]);
+
+  // Paginated leads for dashboard display
+  const paginatedLeads = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return filteredLeads.slice(startIndex, endIndex);
+  }, [filteredLeads, currentPage, rowsPerPage]);
 
   // Professional callback functions
   const handleQuickAction = useCallback((href: string) => {
@@ -644,8 +660,8 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredLeads.length > 0 ? (
-                        filteredLeads.map((lead, idx) => (
+                      {paginatedLeads.length > 0 ? (
+                        paginatedLeads.map((lead, idx) => (
                           <TableRow 
                             key={lead.id} 
                             className="bg-white border-b hover:bg-gray-50 transition-colors cursor-pointer"
@@ -653,7 +669,7 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
                             title="Click to view all leads"
                           >
                             <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
-                              {idx + 1}
+                              {(currentPage - 1) * rowsPerPage + idx + 1}
                             </TableCell>
                             <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
                               {formatDateDDMMYYYY(lead.date)}
@@ -693,6 +709,81 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination for Leads Table */}
+                {filteredLeads.length > rowsPerPage && (
+                  <div className="mt-4 flex items-center justify-between px-4 py-3 border-t border-gray-200">
+                    {/* Pagination Info */}
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      <span className="hidden sm:inline">
+                        Page {currentPage} of {Math.ceil(filteredLeads.length / rowsPerPage)} 
+                        ({filteredLeads.length} total leads)
+                      </span>
+                      <span className="sm:hidden">
+                        {currentPage} / {Math.ceil(filteredLeads.length / rowsPerPage)}
+                      </span>
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="bg-white hover:bg-gray-50 text-gray-600 border-gray-300 text-xs sm:text-sm px-2 sm:px-3"
+                      >
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
+                      </Button>
+                      
+                      {/* Page Numbers for Desktop */}
+                      <div className="hidden sm:flex items-center gap-1">
+                        {Array.from({ length: Math.min(3, Math.ceil(filteredLeads.length / rowsPerPage)) }, (_, i) => {
+                          const totalPages = Math.ceil(filteredLeads.length / rowsPerPage);
+                          let pageNumber;
+                          
+                          if (totalPages <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 2) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 1) {
+                            pageNumber = totalPages - 2 + i;
+                          } else {
+                            pageNumber = currentPage - 1 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={currentPage === pageNumber ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNumber)}
+                              className={`w-8 h-8 p-0 text-xs ${
+                                currentPage === pageNumber 
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                                  : 'bg-white hover:bg-gray-50 text-gray-600 border-gray-300'
+                              }`}
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredLeads.length / rowsPerPage), p + 1))}
+                        disabled={currentPage === Math.ceil(filteredLeads.length / rowsPerPage)}
+                        className="bg-white hover:bg-gray-50 text-gray-600 border-gray-300 text-xs sm:text-sm px-2 sm:px-3"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

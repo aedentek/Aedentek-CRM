@@ -150,8 +150,45 @@ router.get('/settings', async (req, res) => {
   }
 });
 
+// Dedicated favicon endpoint to serve favicon from database
+router.get('/favicon', async (req, res) => {
+  console.log('🎯 Favicon requested from database');
+  try {
+    const [rows] = await db.execute(
+      'SELECT setting_value, file_path FROM app_settings WHERE setting_key = ?', 
+      ['website_favicon']
+    );
+    
+    if (rows.length === 0) {
+      console.log('❌ No favicon found in database');
+      return res.status(404).json({ error: 'Favicon not found in database' });
+    }
+    
+    const faviconPath = rows[0].file_path || rows[0].setting_value;
+    
+    if (faviconPath) {
+      console.log('✅ Favicon path from database:', faviconPath);
+      res.json({ 
+        success: true,
+        faviconUrl: faviconPath,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.log('❌ Favicon path is empty in database');
+      res.status(404).json({ error: 'Favicon path is empty' });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error fetching favicon from database:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch favicon from database',
+      details: error.message 
+    });
+  }
+});
 
 router.get('/settings/:key', async (req, res) => {
+  console.log(`🔍 Settings key route hit with key: ${req.params.key}`);
   try {
     const [rows] = await db.execute('SELECT * FROM app_settings WHERE setting_key = ?', [req.params.key]);
     if (rows.length === 0) {
@@ -189,43 +226,6 @@ router.post('/settings', async (req, res) => {
   } catch (err) {
     console.error('Error creating setting:', err);
     res.status(500).json({ error: err.message });
-  }
-});
-
-// Dedicated favicon endpoint to serve favicon from database
-router.get('/favicon', async (req, res) => {
-  console.log('🎯 Favicon requested from database');
-  try {
-    const [rows] = await db.execute(
-      'SELECT setting_value, file_path FROM app_settings WHERE setting_key = ?', 
-      ['website_favicon']
-    );
-    
-    if (rows.length === 0) {
-      console.log('❌ No favicon found in database');
-      return res.status(404).json({ error: 'Favicon not found in database' });
-    }
-    
-    const faviconPath = rows[0].file_path || rows[0].setting_value;
-    
-    if (faviconPath) {
-      console.log('✅ Favicon path from database:', faviconPath);
-      res.json({ 
-        success: true,
-        faviconUrl: faviconPath,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.log('❌ Favicon path is empty in database');
-      res.status(404).json({ error: 'Favicon path is empty' });
-    }
-    
-  } catch (error) {
-    console.error('❌ Error fetching favicon from database:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch favicon from database',
-      details: error.message 
-    });
   }
 });
 

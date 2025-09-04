@@ -37,14 +37,15 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { settingsAPI } from '@/utils/api';
 import usePageTitle from '@/hooks/usePageTitle';
+import SettingsForm from './SettingsForm';
 
 interface Setting {
   id: number;
   setting_key: string;
-  setting_value: string;
-  setting_type: string;
-  file_path?: string;
-  description?: string;
+  setting_value: string | null;
+  setting_type: 'text' | 'file' | 'json' | 'boolean';
+  file_path: string | null;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [editingSetting, setEditingSetting] = useState<Setting | null>(null);
   const { toast } = useToast();
 
   const settingCategories = [
@@ -120,10 +122,24 @@ const Settings: React.FC = () => {
   };
 
   const formatValue = (setting: Setting) => {
-    if (setting.setting_type === 'file' && setting.file_path) {
-      return `${setting.setting_value} (${setting.file_path})`;
+    if (!setting.setting_value) return 'Not set';
+    if (setting.setting_type === 'file') {
+      return setting.file_path?.split('/').pop() || 'File uploaded';
     }
-    return setting.setting_value || '(empty)';
+    if (setting.setting_value.length > 50) {
+      return setting.setting_value.substring(0, 50) + '...';
+    }
+    return setting.setting_value;
+  };
+
+  const handleEditSetting = (setting: Setting) => {
+    setEditingSetting(setting);
+  };
+
+  const handleUpdateSetting = (updatedSetting: Setting) => {
+    setSettings(prev => 
+      prev.map(s => s.id === updatedSetting.id ? updatedSetting : s)
+    );
   };
 
   const getCategorySettings = (category: string) => {
@@ -363,7 +379,10 @@ const Settings: React.FC = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
-                      <Button className="global-btn modern-btn-sm">
+                      <Button 
+                        className="global-btn modern-btn-sm"
+                        onClick={() => handleEditSetting(setting)}
+                      >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>
@@ -374,6 +393,15 @@ const Settings: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Settings Form Modal */}
+      {editingSetting && (
+        <SettingsForm
+          setting={editingSetting}
+          onClose={() => setEditingSetting(null)}
+          onUpdate={handleUpdateSetting}
+        />
       )}
     </div>
   );

@@ -271,7 +271,7 @@ export async function loadWebsiteSettings() {
     // Apply favicon from database using direct API call
     try {
       console.log('🔧 Loading favicon from database...');
-      const faviconResponse = await fetch(`${API_BASE_URL}/settings/favicon`);
+      const faviconResponse = await fetch(`${API_CONFIG.BACKEND_API}/settings/favicon`);
       
       if (faviconResponse.ok) {
         const faviconData = await faviconResponse.json();
@@ -283,7 +283,7 @@ export async function loadWebsiteSettings() {
           
           // Build full URL for favicon
           const fullFaviconUrl = faviconData.faviconUrl.startsWith('/') 
-            ? `${API_BASE_URL.replace('/api', '')}${faviconData.faviconUrl}`
+            ? `${API_CONFIG.BACKEND_URL}${faviconData.faviconUrl}`
             : faviconData.faviconUrl;
           
           // Add cache busting

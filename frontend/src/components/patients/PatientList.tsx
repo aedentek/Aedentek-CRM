@@ -1737,7 +1737,7 @@ const PatientList: React.FC = () => {
                         className="text-primary font-medium hover:underline hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 p-1 h-auto text-xs sm:text-sm cursor-pointer rounded-md inline-flex items-center gap-1"
                         title={`View full details for ${patient.name} (Click to open comprehensive patient information)`}
                       >
-                        �
+                        
                         {patient.id?.startsWith('P') ? patient.id : `P${String(patient.originalId || patient.id).padStart(4, '0')}`}
                       </button>
                     </TableCell>

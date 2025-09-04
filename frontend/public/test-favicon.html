@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Test</title>
+</head>
+<body>
+    <h1>Testing Favicon API</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testFavicon() {
+            try {
+                console.log('Testing favicon endpoint...');
+                const response = await fetch('http://localhost:4000/api/settings/favicon');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Favicon data:', data);
+                    document.getElementById('result').innerHTML = 
+                        `<p>✅ Success: ${JSON.stringify(data, null, 2)}</p>`;
+                } else {
+                    const error = await response.text();
+                    console.error('Error:', error);
+                    document.getElementById('result').innerHTML = 
+                        `<p>❌ Error: ${error}</p>`;
+                }
+            } catch (error) {
+                console.error('Request failed:', error);
+                document.getElementById('result').innerHTML = 
+                    `<p>❌ Request failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Test on page load
+        window.onload = testFavicon;
+    </script>
+</body>
+</html>
