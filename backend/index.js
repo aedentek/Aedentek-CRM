@@ -35,7 +35,7 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config();
+dotenv.config({ quiet: true });
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 10000;
 

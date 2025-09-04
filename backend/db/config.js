@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // MySQL connection config using environment variables with fallback to hardcoded values
 const db = await mysql.createPool({
