@@ -260,27 +260,88 @@ export async function loadWebsiteSettings() {
       return acc;
     }, {});
 
+    console.log('🎯 Loading website settings from database...');
+
     // Apply website title
     if (settingsMap.website_title) {
       document.title = settingsMap.website_title;
+      console.log('✅ Website title set from database:', settingsMap.website_title);
     }
 
-    // Apply favicon
-    if (settingsMap.website_favicon_file_path) {
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.getElementsByTagName('head')[0].appendChild(link);
+    // Apply favicon from database using direct API call
+    try {
+      console.log('🔧 Loading favicon from database...');
+      const faviconResponse = await fetch(`${API_BASE_URL}/settings/favicon`);
+      
+      if (faviconResponse.ok) {
+        const faviconData = await faviconResponse.json();
+        
+        if (faviconData.success && faviconData.faviconUrl) {
+          // Remove existing favicon links
+          const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+          existingFavicons.forEach(link => link.remove());
+          
+          // Build full URL for favicon
+          const fullFaviconUrl = faviconData.faviconUrl.startsWith('/') 
+            ? `${API_BASE_URL.replace('/api', '')}${faviconData.faviconUrl}`
+            : faviconData.faviconUrl;
+          
+          // Add cache busting
+          const timestamp = Date.now();
+          const faviconUrlWithCache = `${fullFaviconUrl}?v=${timestamp}`;
+          
+          // Create and add new favicon links
+          const favicon = document.createElement('link');
+          favicon.rel = 'icon';
+          favicon.type = 'image/x-icon';
+          favicon.href = faviconUrlWithCache;
+          document.head.appendChild(favicon);
+          
+          const shortcutIcon = document.createElement('link');
+          shortcutIcon.rel = 'shortcut icon';
+          shortcutIcon.type = 'image/x-icon';
+          shortcutIcon.href = faviconUrlWithCache;
+          document.head.appendChild(shortcutIcon);
+          
+          const appleTouchIcon = document.createElement('link');
+          appleTouchIcon.rel = 'apple-touch-icon';
+          appleTouchIcon.href = faviconUrlWithCache;
+          document.head.appendChild(appleTouchIcon);
+          
+          console.log('✅ Favicon loaded from database successfully:', faviconData.faviconUrl);
+        } else {
+          console.log('⚠️ No favicon found in database, using fallback');
+          // Fallback to static favicon if database doesn't have one
+          applyFallbackFavicon();
+        }
+      } else {
+        console.log('⚠️ Failed to fetch favicon from database, using fallback');
+        applyFallbackFavicon();
       }
-      link.href = settingsMap.website_favicon_file_path;
+    } catch (faviconError) {
+      console.error('❌ Error loading favicon from database:', faviconError);
+      applyFallbackFavicon();
     }
 
     return settingsMap;
   } catch (error) {
-    console.error('Failed to load website settings:', error);
-    return {};
+    console.error('❌ Error loading website settings:', error);
+    throw error;
   }
+}
+
+// Fallback function for static favicon
+function applyFallbackFavicon() {
+  console.log('🔄 Applying fallback favicon...');
+  let link = document.querySelector("link[rel~='icon']");
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/x-icon';
+    document.getElementsByTagName('head')[0].appendChild(link);
+  }
+  link.href = '/favicon.ico?v=1.0';
+  console.log('✅ Fallback favicon applied');
 }
 
 // ===================================

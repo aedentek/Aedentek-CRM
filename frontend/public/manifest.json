@@ -1,0 +1,16 @@
+{
+  "name": "Gandhi Bai CRM",
+  "short_name": "Gandhi Bai",
+  "description": "Gandhi Bai De-addiction Center CRM System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
