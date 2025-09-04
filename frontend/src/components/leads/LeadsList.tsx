@@ -20,6 +20,7 @@ import '../../styles/modern-forms.css';
 import '../../styles/modern-tables.css';
 import '../../styles/modern-settings.css';
 import '../../styles/global-crm-design.css';
+import * as XLSX from 'xlsx';
 
 interface Lead {
   id: string;

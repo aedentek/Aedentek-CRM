@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
 import LoadingScreen from '@/components/shared/LoadingScreen';
+import * as XLSX from 'xlsx';
 
 // Simple error boundary for dialog content
 function DialogErrorBoundary({ children }: { children: React.ReactNode }) {

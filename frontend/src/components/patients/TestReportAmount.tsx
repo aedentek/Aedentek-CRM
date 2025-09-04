@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import LoadingScreen from '@/components/shared/LoadingScreen';
 import { getPatientPhotoUrl, PatientPhoto } from '@/utils/photoUtils';
 import '@/styles/global-modal-design.css';
+import * as XLSX from 'xlsx';
 
 interface Patient {
   id: string | number;

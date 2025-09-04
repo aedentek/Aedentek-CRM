@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit2, Trash2, FolderOpen, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, X, Tag, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import usePageTitle from '@/hooks/usePageTitle';
+import * as XLSX from 'xlsx';
 
 interface GroceryCategory {
   id: string;

@@ -10,12 +10,16 @@ const db = await mysql.createPool({
   password: process.env.DB_PASSWORD || 'Aedentek@123#',
   database: process.env.DB_NAME || 'u745362362_crm',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 15, // Moderate increase from 10
   queueLimit: 0,
   ssl: { rejectUnauthorized: false },
-  // Removed problematic config options that cause warnings
-  connectTimeout: 60000,
-  idleTimeout: 60000
+  // Optimized timeouts for remote database but not too aggressive
+  connectTimeout: 20000, // 20 seconds instead of 30
+  acquireTimeout: 20000, // 20 seconds
+  idleTimeout: 180000, // 3 minutes instead of 5
+  // Keep connection alive
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000
 });
 
 export default db;

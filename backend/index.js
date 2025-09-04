@@ -1,6 +1,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -26,6 +27,7 @@ import staffAdvance from './api/staff-advance.js';
 import doctorSalary from './api/doctor-salary.js';
 import staffSalary from './api/staff-salary.js';
 import patientPayments from './api/patient-payments.js';
+import performance from './routes/performance.js';
 // import uploads from './routes/uploads.js';
 import uploads from './routes/uploads.js';
 import dotenv from 'dotenv';
@@ -49,6 +51,20 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Enable compression for all responses
+app.use(compression({
+  level: 6, // Compression level (1-9)
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if the request includes a cache-control: no-transform directive
+    if (req.headers['cache-control'] && req.headers['cache-control'].includes('no-transform')) {
+      return false;
+    }
+    // Use compression filter function
+    return compression.filter(req, res);
+  }
 }));
 
 app.use(express.json({ limit: '50mb' }));
@@ -89,6 +105,11 @@ db.execute('SELECT 1 as test, NOW() as timestamp')
   .then((results) => {
     console.log('✅ Database connection test successful');
     console.log('📊 Test result:', results[0][0]);
+    console.log('🔗 Connection details:', {
+      host: process.env.DB_HOST || 'srv1639.hstgr.io',
+      database: process.env.DB_NAME || 'u745362362_crm',
+      ssl: 'enabled'
+    });
   })
   .catch((err) => {
     console.error('❌ Database connection test failed:');
@@ -107,6 +128,7 @@ app.use('/api', users);
 app.use('/api', grocery);
 app.use('/api', uploads); // MOVED BEFORE PATIENTS TO TAKE PRIORITY
 console.log('📁 Uploads middleware registered at /api');
+app.use('/api', performance);
 app.use('/api', patients);
 app.use('/api', staff);
 app.use('/api', management);

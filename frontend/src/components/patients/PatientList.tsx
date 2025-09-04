@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ActionButtons } from '@/components/ui/HeaderActionButtons';
 import usePageTitle from '@/hooks/usePageTitle';
+import * as XLSX from 'xlsx';
 import '../../styles/modern-forms.css';
 import '../../styles/modern-tables.css';
 import '@/styles/global-crm-design.css';
@@ -1357,78 +1358,104 @@ const PatientList: React.FC = () => {
   };
 
   const exportToCSV = () => {
-    const headers = [
-      'S No',
-      'Patient ID',
-      'Name',
-      'Age',
-      'Gender',
-      'Phone',
-      'Email',
-      'Address',
-      'Emergency Contact',
-      'Medical History',
-      'Admission Date',
-      'Status',
-      'Attender Name',
-      'Attender Phone',
-      'Photo',
-      'Fees',
-      'Blood Test',
-      'Pickup Charge',
-      'Total Amount',
-      'Pay Amount',
-      'Balance',
-      'Payment Type',
-      "Father's Name",
-      "Mother's Name",
-      'Attender Relationship',
-      'Date of Birth',
-      'Marriage Status',
-      'Employee Status'
-    ];
-    const csvData = [
-      headers.join(','),
-      ...filteredPatients.map((p, idx) => [
-        idx + 1,
-        p.id,
-        p.name,
-        p.age,
-        p.gender,
-        p.phone,
-        p.email,
-        p.address,
-        p.emergencyContact,
-        p.medicalHistory,
-        p.admissionDate && p.admissionDate.getFullYear() > 1900 && !isNaN(p.admissionDate.getTime()) 
-          ? format(p.admissionDate, 'dd/MM/yyyy') : 'Not Set',
-        p.status,
-        p.attenderName,
-        p.attenderPhone,
-        p.photo,
-        p.fees,
-        p.bloodTest,
-        p.pickupCharge,
-        p.totalAmount,
-        p.payAmount,
-        p.balance,
-        p.paymentType,
-        p.fatherName,
-        p.motherName,
-        p.attenderRelationship,
-        p.dateOfBirth && !isNaN(new Date(p.dateOfBirth).getTime()) ? format(new Date(p.dateOfBirth), 'dd/MM/yyyy') : '',
-        p.marriageStatus,
-        p.employeeStatus
-      ].map(val => typeof val === 'string' ? '"' + val.replace(/"/g, '""') + '"' : val).join(','))
-    ].join('\n');
+    try {
+      if (!filteredPatients || filteredPatients.length === 0) {
+        toast({
+          title: "Export Warning",
+          description: "No patients data to export.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'patients-list.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+      const headers = [
+        'S No',
+        'Patient ID',
+        'Name',
+        'Age',
+        'Gender',
+        'Phone',
+        'Email',
+        'Address',
+        'Emergency Contact',
+        'Medical History',
+        'Admission Date',
+        'Status',
+        'Attender Name',
+        'Attender Phone',
+        'Photo',
+        'Fees',
+        'Blood Test',
+        'Pickup Charge',
+        'Total Amount',
+        'Pay Amount',
+        'Balance',
+        'Payment Type',
+        "Father's Name",
+        "Mother's Name",
+        'Attender Relationship',
+        'Date of Birth',
+        'Marriage Status',
+        'Employee Status'
+      ];
+      
+      const csvData = [
+        headers.join(','),
+        ...filteredPatients.map((p, idx) => [
+          idx + 1,
+          p.id || '',
+          p.name || '',
+          p.age || '',
+          p.gender || '',
+          p.phone || '',
+          p.email || '',
+          p.address || '',
+          p.emergencyContact || '',
+          p.medicalHistory || '',
+          p.admissionDate && p.admissionDate.getFullYear() > 1900 && !isNaN(p.admissionDate.getTime()) 
+            ? format(p.admissionDate, 'dd/MM/yyyy') : 'Not Set',
+          p.status || '',
+          p.attenderName || '',
+          p.attenderPhone || '',
+          p.photo || '',
+          p.fees || 0,
+          p.bloodTest || 0,
+          p.pickupCharge || 0,
+          p.totalAmount || 0,
+          p.payAmount || 0,
+          p.balance || 0,
+          p.paymentType || '',
+          p.fatherName || '',
+          p.motherName || '',
+          p.attenderRelationship || '',
+          p.dateOfBirth && !isNaN(new Date(p.dateOfBirth).getTime()) ? format(new Date(p.dateOfBirth), 'dd/MM/yyyy') : '',
+          p.marriageStatus || '',
+          p.employeeStatus || ''
+        ].map(val => typeof val === 'string' ? '"' + String(val).replace(/"/g, '""') + '"' : val).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `patients-list-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: `Exported ${filteredPatients.length} patients to CSV file.`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export patients data. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

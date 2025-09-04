@@ -18,6 +18,7 @@ import usePageTitle from '@/hooks/usePageTitle';
 import '@/styles/global-crm-design.css';
 import '../../styles/modern-forms.css';
 import '../../styles/modern-tables.css';
+import * as XLSX from 'xlsx';
 
 const StaffManagement: React.FC = () => {
   // Set page title

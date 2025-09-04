@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Edit2, Trash2, Package, ShoppingCart, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, X, IndianRupee, Package2, Tag, Building2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import usePageTitle from '@/hooks/usePageTitle';
+import * as XLSX from 'xlsx';
 
 interface GroceryProduct {
   id: string;

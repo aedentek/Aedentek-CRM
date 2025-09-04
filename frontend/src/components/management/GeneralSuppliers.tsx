@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
 import LoadingScreen from '@/components/shared/LoadingScreen';
 import usePageTitle from '@/hooks/usePageTitle';
+import * as XLSX from 'xlsx';
 interface GeneralSupplier {
   id: string;
   name: string;

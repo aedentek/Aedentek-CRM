@@ -14,6 +14,7 @@ import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
 import { ActionButtons } from '@/components/ui/HeaderActionButtons';
 import usePageTitle from '@/hooks/usePageTitle';
 import '@/styles/global-crm-design.css';
+import * as XLSX from 'xlsx';
 
 // Simple error boundary for dialog content
 function DialogErrorBoundary({ children }: { children: React.ReactNode }) {

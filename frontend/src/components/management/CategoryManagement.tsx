@@ -6,6 +6,7 @@ import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
 import '../../styles/modern-forms.css';
 import '../../styles/modern-tables.css';
 import '../../styles/modern-settings.css';
+import * as XLSX from 'xlsx';
 
 // Simple error boundary for dialog content
 function DialogErrorBoundary({ children }: { children: React.ReactNode }) {

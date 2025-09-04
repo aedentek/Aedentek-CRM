@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
 
 interface User {
 	id: number;
@@ -238,26 +239,51 @@ const Administration: React.FC = () => {
 	};
 
 	const exportToCSV = () => {
-		const headers = ['S No', 'Username', 'Role', 'Status', 'Created Date'];
-		const csvData = filteredUsers.map((user, index) => [
-			index + 1,
-			user.username,
-			user.role,
-			user.status,
-			user.createdAt
-		]);
+		try {
+			if (!filteredUsers || filteredUsers.length === 0) {
+				toast({
+					title: "Export Warning",
+					description: "No users data to export.",
+					variant: "destructive",
+				});
+				return;
+			}
 
-		const csvContent = [headers, ...csvData]
-			.map(row => row.join(','))
-			.join('\n');
+			const headers = ['S No', 'Username', 'Role', 'Status', 'Created Date'];
+			const csvData = filteredUsers.map((user, index) => [
+				index + 1,
+				user.username || '',
+				user.role || '',
+				user.status || '',
+				user.createdAt ? formatDateDisplay(user.createdAt) : ''
+			]);
 
-		const blob = new Blob([csvContent], { type: 'text/csv' });
-		const url = window.URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'users-list.csv';
-		a.click();
-		window.URL.revokeObjectURL(url);
+			const csvContent = [headers, ...csvData]
+				.map(row => row.map(cell => typeof cell === 'string' ? `"${String(cell).replace(/"/g, '""')}"` : cell).join(','))
+				.join('\n');
+
+			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `users-list-${new Date().toISOString().split('T')[0]}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+
+			toast({
+				title: "Export Successful",
+				description: `Exported ${filteredUsers.length} users to CSV file.`,
+			});
+		} catch (error) {
+			console.error('Export error:', error);
+			toast({
+				title: "Export Failed",
+				description: "Failed to export users data. Please try again.",
+				variant: "destructive",
+			});
+		}
 	};
 
 	return (

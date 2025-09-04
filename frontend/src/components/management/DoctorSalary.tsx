@@ -34,6 +34,7 @@ import { DatabaseService } from '@/services/databaseService';
 import { DoctorSalaryAPI } from '@/services/doctorSalaryAPI';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
 import usePageTitle from '@/hooks/usePageTitle';
 import '@/styles/global-crm-design.css';
@@ -276,42 +277,56 @@ const DoctorSalary: React.FC = () => {
   const totalPages = Math.ceil(filteredDoctors.length / rowsPerPage);
 
   const exportToCSV = () => {
-    const headers = ['S.No', 'Doctor ID', 'Doctor Name', 'Joining Date', 'Salary', 'Advance', 'Carry Forward', 'Total Paid', 'Balance', 'Status'];
-    const csvData = [
-      headers.join(','),
-      ...filteredDoctors.map((doctor, index) => {
-        const totalPaidWithAdvance = parseNumeric(doctor.total_paid) + parseNumeric(doctor.advance_amount || 0);
-        const balance = parseNumeric(doctor.salary) + parseNumeric(doctor.carry_forward || 0) - totalPaidWithAdvance;
-        return [
-          index + 1,
-          doctor.id,
-          doctor.name,
-          formatDate(doctor.join_date),
-          doctor.salary || '0',
-          parseNumeric(doctor.advance_amount || 0).toString(),
-          parseNumeric(doctor.carry_forward || 0).toString(),
-          totalPaidWithAdvance.toString(),
-          balance.toString(),
-          balance > 0 ? 'Pending' : 'Paid'
-        ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
-      })
-    ].join('\n');
-    
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    
-    // Generate filename with month/year filter if applied
-    let filename = 'doctor-salary';
-    if (filterMonth !== null && filterYear !== null) {
-      filename += `-${months[filterMonth - 1]}-${filterYear}`;
+    try {
+      if (!filteredDoctors || filteredDoctors.length === 0) {
+        toast('Export Warning: No doctor salary data to export.');
+        return;
+      }
+
+      const headers = ['S.No', 'Doctor ID', 'Doctor Name', 'Joining Date', 'Salary', 'Advance', 'Carry Forward', 'Total Paid', 'Balance', 'Status'];
+      const csvData = [
+        headers.join(','),
+        ...filteredDoctors.map((doctor, index) => {
+          const totalPaidWithAdvance = parseNumeric(doctor.total_paid) + parseNumeric(doctor.advance_amount || 0);
+          const balance = parseNumeric(doctor.salary) + parseNumeric(doctor.carry_forward || 0) - totalPaidWithAdvance;
+          return [
+            index + 1,
+            doctor.id || '',
+            doctor.name || '',
+            formatDate(doctor.join_date),
+            doctor.salary || '0',
+            parseNumeric(doctor.advance_amount || 0).toString(),
+            parseNumeric(doctor.carry_forward || 0).toString(),
+            totalPaidWithAdvance.toString(),
+            balance.toString(),
+            balance > 0 ? 'Pending' : 'Paid'
+          ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+        })
+      ].join('\n');
+      
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Generate filename with month/year filter if applied
+      let filename = 'doctor-salary';
+      if (filterMonth !== null && filterYear !== null) {
+        filename += `-${months[filterMonth - 1]}-${filterYear}`;
+      }
+      filename += `-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast(`Export Successful: Exported ${filteredDoctors.length} doctor salary records to CSV file.`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast('Export Failed: Failed to export doctor salary data. Please try again.');
     }
-    filename += `-${new Date().toISOString().split('T')[0]}.csv`;
-    
-    a.download = filename;
-    a.click();
-    window.URL.revokeObjectURL(url);
   };
 
   // Save monthly records handler

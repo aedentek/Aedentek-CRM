@@ -576,20 +576,8 @@ router.delete('/patient-call-records/:id', async (req, res) => {
 // Get all patients
 router.get('/patients', async (req, res) => {
   try {
+    // Simple query without pagination - load all patients for immediate display
     const [rows] = await db.query('SELECT * FROM patients WHERE is_deleted = FALSE ORDER BY created_at DESC');
-    
-    // Debug: Log first few patients' date information
-    console.log('📅 [DEBUG] Sample patient date data:');
-    rows.slice(0, 3).forEach((patient, idx) => {
-      console.log(`  Patient ${idx + 1}:`, {
-        id: patient.id,
-        name: patient.name,
-        admissionDate: patient.admissionDate,
-        dateOfBirth: patient.dateOfBirth,
-        admissionDateType: typeof patient.admissionDate,
-        dateOfBirthType: typeof patient.dateOfBirth
-      });
-    });
     
     // Normalize photo paths for web use (convert backslashes to forward slashes)
     const normalizedPatients = rows.map(patient => ({
@@ -602,7 +590,6 @@ router.get('/patients', async (req, res) => {
     }));
     
     console.log(`Retrieved ${rows.length} patients`);
-    console.log('📋 Sample patient data (using actual database columns):', JSON.stringify(normalizedPatients[0], null, 2));
     res.json(normalizedPatients);
   } catch (err) {
     console.error('Error fetching patients:', err);
@@ -773,7 +760,7 @@ router.post('/patients', async (req, res) => {
       patientId: sanitizedData.patient_id, 
       name: sanitizedData.name 
     });
-    
+
     // Immediately query back what was inserted to verify
     console.log('🔍 [DEBUG] Querying back inserted patient with ID:', result.insertId);
     const [insertedPatientRows] = await db.query(
@@ -781,18 +768,21 @@ router.post('/patients', async (req, res) => {
       [result.insertId]
     );
     
+    let insertedPatient = null;
     if (insertedPatientRows.length > 0) {
-      // Database already has correct column names, no mapping needed
-      console.log('📋 [DEBUG] Actually inserted patient data (using correct database columns):', JSON.stringify(insertedPatientRows[0], null, 2));
+      insertedPatient = insertedPatientRows[0];
+      console.log('📋 [DEBUG] Successfully retrieved inserted patient');
     } else {
       console.log('❌ [DEBUG] No patient found with inserted ID:', result.insertId);
     }
-    
+
+    // Return complete patient data immediately for frontend to use
     res.status(201).json({ 
+      success: true,
       id: result.insertId,
       patient_id: sanitizedData.patient_id,
       message: 'Patient added successfully',
-      patient: { 
+      patient: insertedPatient || { 
         id: result.insertId, 
         patient_id: sanitizedData.patient_id, 
         name: sanitizedData.name,

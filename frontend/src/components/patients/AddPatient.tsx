@@ -333,86 +333,8 @@ const AddPatient: React.FC = () => {
         return;
       }
 
-      // Upload files to server instead of converting to base64
-      let photoPath = '';
-      let patientAadharPath = '';
-      let patientPanPath = '';
-      let attenderAadharPath = '';
-      let attenderPanPath = '';
-
-      // Upload photo if exists
-      if (photo) {
-        try {
-          console.log('🔄 Attempting photo upload with simple method...');
-          photoPath = await uploadPatientFileSimple(photo, 'temp', 'photo');
-          console.log('✅ Photo uploaded successfully:', photoPath);
-        } catch (error) {
-          console.error('❌ Photo upload failed:', error);
-          toast({
-            title: "Photo Upload Warning",
-            description: `Photo upload failed: ${error.message}. Patient will be created without photo.`,
-            variant: "destructive",
-          });
-          // Don't stop form submission, just continue without photo
-          photoPath = '';
-        }
-      }
-
-      // Upload document files to server
-      if (documents.patientAadhar) {
-        try {
-          patientAadharPath = await uploadPatientFileSimple(documents.patientAadhar, 'temp', 'patientAadhar');
-          console.log('✅ Patient Aadhar uploaded successfully:', patientAadharPath);
-        } catch (error) {
-          console.error('❌ Patient Aadhar upload failed:', error);
-          toast({
-            title: "Document Upload Warning",
-            description: `Patient Aadhar upload failed: ${error.message}. Patient will be created without this document.`,
-            variant: "destructive",
-          });
-        }
-      }
-      if (documents.patientPan) {
-        try {
-          patientPanPath = await uploadPatientFileSimple(documents.patientPan, 'temp', 'patientPan');
-          console.log('✅ Patient PAN uploaded successfully:', patientPanPath);
-        } catch (error) {
-          console.error('❌ Patient PAN upload failed:', error);
-          toast({
-            title: "Document Upload Warning",
-            description: `Patient PAN upload failed: ${error.message}. Patient will be created without this document.`,
-            variant: "destructive",
-          });
-        }
-      }
-      if (documents.attenderAadhar) {
-        try {
-          attenderAadharPath = await uploadPatientFileSimple(documents.attenderAadhar, 'temp', 'attenderAadhar');
-          console.log('✅ Attender Aadhar uploaded successfully:', attenderAadharPath);
-        } catch (error) {
-          console.error('❌ Attender Aadhar upload failed:', error);
-          toast({
-            title: "Document Upload Warning",
-            description: `Attender Aadhar upload failed: ${error.message}. Patient will be created without this document.`,
-            variant: "destructive",
-          });
-        }
-      }
-      if (documents.attenderPan) {
-        try {
-          attenderPanPath = await uploadPatientFileSimple(documents.attenderPan, 'temp', 'attenderPan');
-          console.log('✅ Attender PAN uploaded successfully:', attenderPanPath);
-        } catch (error) {
-          console.error('❌ Attender PAN upload failed:', error);
-          toast({
-            title: "Document Upload Warning",
-            description: `Attender PAN upload failed: ${error.message}. Patient will be created without this document.`,
-            variant: "destructive",
-          });
-        }
-      }
-
-      const patientData = {
+      // First create the patient without files to get a patient ID
+      const patientDataWithoutFiles = {
         name: formData.name.trim(),
         age: parseInt(formData.age),
         gender: formData.gender,
@@ -425,11 +347,6 @@ const AddPatient: React.FC = () => {
         status: formData.status,
         attenderName: formData.attenderName.trim(),
         attenderPhone: formData.attenderPhone.trim(),
-        photo: photoPath,
-        patientAadhar: patientAadharPath,
-        patientPan: patientPanPath,
-        attenderAadhar: attenderAadharPath,
-        attenderPan: attenderPanPath,
         fees: parseFloat(formData.fees) || 0,
         bloodTest: parseFloat(formData.bloodTest) || 0,
         pickupCharge: parseFloat(formData.pickupCharge) || 0,
@@ -443,98 +360,110 @@ const AddPatient: React.FC = () => {
         attenderRelationship: formData.attenderRelationship,
         dateOfBirth: dateOfBirth ? format(dateOfBirth, "dd-MM-yyyy") : '',
         marriageStatus: formData.marriageStatus,
-        employeeStatus: formData.employeeStatus
+        employeeStatus: formData.employeeStatus,
+        // Set file paths as empty initially
+        photo: '',
+        patientAadhar: '',
+        patientPan: '',
+        attenderAadhar: '',
+        attenderPan: ''
       };
 
-      console.log('📋 Final patient data being submitted:');
-      console.log('  Name:', patientData.name);
-      console.log('  Age:', patientData.age);
-      console.log('  Gender:', patientData.gender);
-      console.log('  Phone:', patientData.phone);
-      console.log('  Email:', patientData.email);
-      console.log('  Address:', patientData.address);
-      console.log('  Emergency Contact:', patientData.emergencyContact);
-      console.log('  Medical History:', patientData.medicalHistory);
-      console.log('  Admission Date:', patientData.admissionDate);
-      console.log('  Status:', patientData.status);
-      console.log('  Photo:', photoPath);
-      console.log('  Patient Aadhar:', patientAadharPath);
-      console.log('  Patient PAN:', patientPanPath);
-      console.log('  Attender Aadhar:', attenderAadharPath);
-      console.log('  Attender PAN:', attenderPanPath);
-      console.log('  Complete patient data object:', JSON.stringify(patientData, null, 2));
-      console.log('🌐 API URL being used:', import.meta.env.VITE_API_URL || 'http://localhost:4000/api');
+      console.log('🚀 Creating patient first, then uploading files...');
+      const addPatientResponse = await DatabaseService.addPatient(patientDataWithoutFiles);
+      console.log('✅ Patient created successfully:', addPatientResponse);
       
-      console.log('🚀 About to call DatabaseService.addPatient with data:', patientData);
-      const addPatientResponse = await DatabaseService.addPatient(patientData);
-      console.log('✅ Patient creation API response:', addPatientResponse);
-      console.log('🔍 Full patient creation response:', addPatientResponse);
-      
-      // Get the actual patient ID from the response (use patient_id which is in P0001 format)
+      // Get the patient ID from the response
       const newPatientId = addPatientResponse.id || addPatientResponse.patient?.id;
       const patientIdFormatted = addPatientResponse.patient_id || addPatientResponse.patient?.patient_id;
-      console.log('✅ Patient created with ID:', newPatientId, 'Patient ID:', patientIdFormatted);
-      console.log('🔍 Available files to move:', { photoPath, patientAadharPath, patientPanPath, attenderAadharPath, attenderPanPath });
       
-      // Move uploaded files from temp to patient-specific folder if patient was created successfully
-      if (patientIdFormatted && (photoPath || patientAadharPath || patientPanPath || attenderAadharPath || attenderPanPath)) {
+      if (!patientIdFormatted) {
+        throw new Error('Failed to get patient ID from response');
+      }
+      
+      console.log('� Now uploading files for patient:', patientIdFormatted);
+      
+      // Now upload files directly to the patient's folder
+      let photoPath = '';
+      let patientAadharPath = '';
+      let patientPanPath = '';
+      let attenderAadharPath = '';
+      let attenderPanPath = '';
+
+      // Upload files directly to patient folder
+      if (photo) {
         try {
-          console.log('📂 Starting file move process for patient:', patientIdFormatted);
-          
-          const tempPaths: { [key: string]: string } = {};
-          if (photoPath) {
-            tempPaths.photo = photoPath;
-            console.log('📸 Photo to move:', photoPath);
-          }
-          if (patientAadharPath) {
-            tempPaths.patientAadhar = patientAadharPath;
-            console.log('📄 Patient Aadhar to move:', patientAadharPath);
-          }
-          if (patientPanPath) {
-            tempPaths.patientPan = patientPanPath;
-            console.log('📄 Patient PAN to move:', patientPanPath);
-          }
-          if (attenderAadharPath) {
-            tempPaths.attenderAadhar = attenderAadharPath;
-            console.log('📄 Attender Aadhar to move:', attenderAadharPath);
-          }
-          if (attenderPanPath) {
-            tempPaths.attenderPan = attenderPanPath;
-            console.log('📄 Attender PAN to move:', attenderPanPath);
-          }
-          
-          console.log('📂 Calling movePatientFiles with:', { patientId: patientIdFormatted, tempPaths });
-          const newPaths = await movePatientFiles(patientIdFormatted, tempPaths);
-          console.log('✅ Files moved successfully:', newPaths);
-          
-          // Update patient record with new file paths using the numeric ID
-          if (Object.keys(newPaths).length > 0) {
-            console.log('📝 Updating patient record with new paths...');
-            await DatabaseService.updatePatient(newPatientId, {
-              photo: newPaths.photo || photoPath,
-              patientAadhar: newPaths.patientAadhar || patientAadharPath,
-              patientPan: newPaths.patientPan || patientPanPath,
-              attenderAadhar: newPaths.attenderAadhar || attenderAadharPath,
-              attenderPan: newPaths.attenderPan || attenderPanPath
-            });
-            console.log('✅ Patient record updated with new file paths');
-          } else {
-            console.log('⚠️ No new paths returned from file move operation');
-          }
-          
-        } catch (fileMoveError) {
-          console.error('❌ Error moving files to patient folder:', fileMoveError);
+          console.log('� Uploading photo for patient:', patientIdFormatted);
+          photoPath = await uploadPatientFileSimple(photo, patientIdFormatted, 'photo');
+          console.log('✅ Photo uploaded successfully:', photoPath);
+        } catch (error) {
+          console.error('❌ Photo upload failed:', error);
           toast({
-            title: "File Organization Warning",
-            description: "Patient created successfully, but files could not be organized. They remain in temporary location.",
+            title: "Photo Upload Warning",
+            description: `Photo upload failed: ${error.message}. Patient created without photo.`,
             variant: "destructive",
           });
         }
-      } else {
-        console.log('⚠️ Skipping file move - missing patient ID or no files to move');
-        console.log('  patientIdFormatted:', patientIdFormatted);
-        console.log('  hasFiles:', !!(photoPath || patientAadharPath || patientPanPath || attenderAadharPath || attenderPanPath));
       }
+
+      if (documents.patientAadhar) {
+        try {
+          patientAadharPath = await uploadPatientFileSimple(documents.patientAadhar, patientIdFormatted, 'patientAadhar');
+          console.log('✅ Patient Aadhar uploaded successfully:', patientAadharPath);
+        } catch (error) {
+          console.error('❌ Patient Aadhar upload failed:', error);
+        }
+      }
+      
+      if (documents.patientPan) {
+        try {
+          patientPanPath = await uploadPatientFileSimple(documents.patientPan, patientIdFormatted, 'patientPan');
+          console.log('✅ Patient PAN uploaded successfully:', patientPanPath);
+        } catch (error) {
+          console.error('❌ Patient PAN upload failed:', error);
+        }
+      }
+      
+      if (documents.attenderAadhar) {
+        try {
+          attenderAadharPath = await uploadPatientFileSimple(documents.attenderAadhar, patientIdFormatted, 'attenderAadhar');
+          console.log('✅ Attender Aadhar uploaded successfully:', attenderAadharPath);
+        } catch (error) {
+          console.error('❌ Attender Aadhar upload failed:', error);
+        }
+      }
+      
+      if (documents.attenderPan) {
+        try {
+          attenderPanPath = await uploadPatientFileSimple(documents.attenderPan, patientIdFormatted, 'attenderPan');
+          console.log('✅ Attender PAN uploaded successfully:', attenderPanPath);
+        } catch (error) {
+          console.error('❌ Attender PAN upload failed:', error);
+        }
+      }
+
+      // Update patient record with file paths if any files were uploaded
+      if (photoPath || patientAadharPath || patientPanPath || attenderAadharPath || attenderPanPath) {
+        try {
+          console.log('📝 Updating patient record with file paths...');
+          await DatabaseService.updatePatient(newPatientId, {
+            photo: photoPath,
+            patientAadhar: patientAadharPath,
+            patientPan: patientPanPath,
+            attenderAadhar: attenderAadharPath,
+            attenderPan: attenderPanPath
+          });
+          console.log('✅ Patient record updated with file paths');
+        } catch (updateError) {
+          console.error('❌ Failed to update patient with file paths:', updateError);
+          toast({
+            title: "File Update Warning",
+            description: "Patient created successfully, but file paths could not be saved.",
+            variant: "destructive",
+          });
+        }
+      }
+      
       
       // Sync payment data to patient_payments table if there's a payment amount
       const payAmount = Number(formData.payAmount || 0);
@@ -590,6 +519,7 @@ const AddPatient: React.FC = () => {
         title: "Patient Added Successfully!",
         description: `Patient ${formData.name} has been registered.`,
       });
+      
       setTimeout(() => {
         navigate('/patients/list');
       }, 1500);

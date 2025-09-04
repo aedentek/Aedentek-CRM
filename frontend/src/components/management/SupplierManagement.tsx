@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DatabaseService } from '@/services/databaseService';
 import usePageTitle from '@/hooks/usePageTitle';
 import '@/styles/global-crm-design.css';
+import * as XLSX from 'xlsx';
 
 type Supplier = {
   id: number;

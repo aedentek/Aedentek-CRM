@@ -37,6 +37,7 @@ import { Search, CreditCard, TrendingUp, TrendingDown, FileText, Pencil, Eye, Tr
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseService } from '@/services/databaseService';
 import usePageTitle from '@/hooks/usePageTitle';
+import * as XLSX from 'xlsx';
 
 // Helper to format any date string as DD/MM/YYYY
 function formatDateDDMMYYYY(dateStr?: string): string {
