@@ -204,6 +204,7 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
   const [patientsCount, setPatientsCount] = useState<number>(0);
   const [doctorsCount, setDoctorsCount] = useState<number>(0);
   const [staffCount, setStaffCount] = useState<number>(0);
+  const [medicineStockCount, setMedicineStockCount] = useState<number>(0);
   const [leadsData, setLeadsData] = useState<any[]>([]);
 
   // Month/Year picker state
@@ -235,6 +236,13 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
         // Load staff count
         const staffData = await DatabaseService.getAllStaff();
         setStaffCount(staffData?.length || 0);
+        
+        // Load medicine stock count
+        const medicineProducts = await DatabaseService.getAllMedicineProducts();
+        const totalStock = medicineProducts?.reduce((sum: number, product: any) => {
+          return sum + (parseInt(product.current_stock) || 0);
+        }, 0) || 0;
+        setMedicineStockCount(totalStock);
         
         // Load leads data
         const allLeads = await DatabaseService.getAllLeads();
@@ -291,17 +299,17 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
       progress: 82
     },
     {
-      id: 'inventory',
-      title: 'Inventory Items',
-      value: '1,247',
+      id: 'medicine-stock',
+      title: 'Medicine Stock',
+      value: loading ? 'Loading...' : medicineStockCount.toLocaleString(),
       change: 8.1,
       trend: 'up',
-      icon: Package,
+      icon: Pill,
       color: 'from-orange-600 to-orange-700',
-      description: 'In stock',
+      description: 'Units in stock',
       progress: 76
     }
-  ], [loading, patientsCount, doctorsCount, staffCount]);
+  ], [loading, patientsCount, doctorsCount, staffCount, medicineStockCount]);
 
   const quickActions = useMemo(() => [
     {
