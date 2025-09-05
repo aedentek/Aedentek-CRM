@@ -71,7 +71,7 @@ const permissionsByCategory = getPermissionsByCategory();
 const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleTemplates, setRoleTemplates] = useState<{id: string, name: string}[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch role templates for dropdown
@@ -93,9 +93,12 @@ const RoleManagement: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    (async () => {
+    const fetchData = async (showLoadingSpinner = false) => {
       if (refreshKey > 0) console.log('Refreshing data...');
       try {
+        if (showLoadingSpinner) {
+          setLoading(true);
+        }
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`);
         const data = await res.json();
         const mappedRoles = data.map((role: any) => ({
@@ -110,9 +113,13 @@ const RoleManagement: React.FC = () => {
       } catch (e) {
         console.error('Error fetching roles:', e);
       } finally {
-        setLoading(false);
+        if (showLoadingSpinner) {
+          setLoading(false);
+        }
       }
-    })();
+    };
+
+    fetchData(refreshKey > 0);
   }, [refreshKey]);
 
   // Auto-refresh data periodically

@@ -120,7 +120,7 @@ const PatientFullDetails: React.FC = () => {
     console.log('🚨 PatientFullDetails useEffect triggered with patientId:', patientId);
   }, [patientId]);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);

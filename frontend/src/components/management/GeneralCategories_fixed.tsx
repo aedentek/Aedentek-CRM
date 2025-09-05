@@ -44,7 +44,7 @@ interface GeneralCategory {
 
 const GeneralCategories: React.FC = () => {
   const [categories, setCategories] = useState<GeneralCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {

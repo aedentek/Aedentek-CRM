@@ -30,16 +30,18 @@ const StaffCategoryManagement: React.FC = () => {
   usePageTitle();
 
   const [categories, setCategories] = React.useState<StaffCategory[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   
   // Load categories from MySQL on component mount
   React.useEffect(() => {
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       const data = await DatabaseService.getAllStaffCategories();
       console.log('Fetched staff categories from MySQL:', data);
       // Sort categories by ID before setting state
@@ -64,7 +66,9 @@ const StaffCategoryManagement: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -280,8 +284,8 @@ const StaffCategoryManagement: React.FC = () => {
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching staff categories data');
+                  loadCategories(true);
                 }}
                 loading={loading}
                 disabled={loading}

@@ -1022,8 +1022,13 @@ const PatientCallRecord: React.FC = () => {
           
           <div className="flex items-center gap-2 sm:gap-3">
             <ActionButtons.Refresh onClick={() => {
-              console.log('🔄 Manual refresh triggered - refreshing entire page');
-              window.location.reload();
+              console.log('🔄 Manual refresh triggered - fetching patient call records');
+              setIsLoadingPatients(true);
+              setIsLoadingRecords(true);
+              Promise.all([loadPatients(), loadCallRecords()]).finally(() => {
+                setIsLoadingPatients(false);
+                setIsLoadingRecords(false);
+              });
             }} />
             
             <ActionButtons.MonthYear

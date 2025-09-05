@@ -54,7 +54,7 @@ const GrocerySuppliers: React.FC = () => {
   usePageTitle();
 
 const [suppliers, setSuppliers] = useState<GrocerySupplier[]>([]);
-const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(false);
 const [refreshKey, setRefreshKey] = useState(0);
 
 React.useEffect(() => {
@@ -444,8 +444,9 @@ const handleRefresh = React.useCallback(() => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching grocery suppliers data');
+                  setLoading(true);
+                  setRefreshKey(prev => prev + 1);
                 }}
                 loading={loading}
               />

@@ -52,7 +52,7 @@ const PatientFullDetails: React.FC = () => {
   
   console.log('🔍 PatientFullDetails component loaded with patientId:', patientId);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [patient, setPatient] = useState<Patient | null>(null);
 
   useEffect(() => {

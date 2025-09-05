@@ -20,7 +20,7 @@ const PatientBiodataSimple: React.FC = () => {
   const navigate = useNavigate();
   
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

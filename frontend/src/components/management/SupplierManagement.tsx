@@ -56,7 +56,7 @@ const SupplierManagement: React.FC = () => {
   usePageTitle();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {
@@ -386,8 +386,9 @@ const SupplierManagement: React.FC = () => {
           
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching supplier data');
+                setLoading(true);
+                setRefreshKey(prev => prev + 1);
               }} />
               
               <ActionButtons.MonthYear

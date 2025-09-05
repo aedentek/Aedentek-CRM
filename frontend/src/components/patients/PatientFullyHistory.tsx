@@ -29,7 +29,7 @@ const PatientFullyHistory: React.FC = () => {
   const { toast } = useToast();
   
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   console.log('PatientFullyHistory - Received patientId:', patientId);
 

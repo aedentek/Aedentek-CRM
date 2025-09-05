@@ -79,7 +79,7 @@ const SalaryPayment: React.FC = () => {
   const [staff, setStaff] = useState<StaffSalary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStaff, setFilteredStaff] = useState<StaffSalary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   
   // New states for enhanced functionality (mirroring Doctor Salary)
   const [selectedStaff, setSelectedStaff] = useState<StaffSalary | null>(null);
@@ -494,8 +494,8 @@ const SalaryPayment: React.FC = () => {
               </Button>
               
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching staff salary data');
+                loadStaff();
               }} />
             </div>
           </div>

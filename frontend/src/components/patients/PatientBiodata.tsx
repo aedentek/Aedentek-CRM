@@ -136,7 +136,7 @@ const PatientBiodata: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<PatientMedicalRecord[]>([]);
   const [payments, setPayments] = useState<PatientPayment[]>([]);
   const [tests, setTests] = useState<PatientTest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'medical' | 'financial' | 'documents'>('overview');
   const [error, setError] = useState<string | null>(null);
 

@@ -70,7 +70,7 @@ const DeletedPatients: React.FC = () => {
 
   const [deletedPatients, setDeletedPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [deletedByFilter, setDeletedByFilter] = useState('');
@@ -309,8 +309,8 @@ const DeletedPatients: React.FC = () => {
             
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching deleted patients data');
+                loadDeletedPatients();
               }} />
               
               <ActionButtons.MonthYear

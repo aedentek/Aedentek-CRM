@@ -94,7 +94,7 @@ interface TeamMember {
 
 const ModernFloatingDashboard: React.FC<DashboardProps> = ({ user }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     patients: { total: 0, newToday: 0, activeToday: 0, trend: 0 },
     revenue: { total: 0, thisMonth: 0, lastMonth: 0, trend: 0 },

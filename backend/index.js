@@ -44,8 +44,10 @@ const PORT = process.env.PORT || process.env.API_PORT || 10000;
 app.use(cors({
   origin: [
     'https://admin.gandhibaideaddictioncenter.com',
-    'https://crm.gandhibaideaddictioncenter.com', 
+    // 'https://crm.gandhibaideaddictioncenter.com', 
     'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:8082',
     'http://localhost:5173',
     'http://localhost:3000'
   ],

@@ -78,8 +78,8 @@ const MedicineStock: React.FC = () => {
 
   const [medicines, setMedicines] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
-  const [loadingDoctors, setLoadingDoctors] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {
@@ -545,8 +545,9 @@ const MedicineStock: React.FC = () => {
           
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching medicine stock data');
+                setLoading(true);
+                setRefreshKey(prev => prev + 1);
               }} />
               
               <ActionButtons.MonthYear

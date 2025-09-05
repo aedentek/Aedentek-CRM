@@ -63,15 +63,18 @@ const MedicineManagement: React.FC = () => {
 
 const [medicines, setMedicines] = useState<Medicine[]>([]);
 const [doctors, setDoctors] = useState<any[]>([]);
-const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(false);
 const [refreshKey, setRefreshKey] = useState(0);
 const [categories, setCategories] = useState<Array<{id: number, name: string, status: string}>>([]);
 const [suppliers, setSuppliers] = useState<Array<{id: number, name: string, status: string}>>([]);
 
 React.useEffect(() => {
-  (async () => {
+  const fetchData = async (showLoadingSpinner = false) => {
     if (refreshKey > 0) console.log('Refreshing data...');
     try {
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       const db = (await import('@/services/databaseService')).DatabaseService;
       
       // Fetch medicines, categories, suppliers, and doctors in parallel
@@ -100,9 +103,13 @@ React.useEffect(() => {
     } catch (e) {
       // Optionally show error
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
-  })();
+  };
+
+  fetchData(refreshKey > 0);
 }, [refreshKey]);
 
 // Auto-refresh data periodically
@@ -725,8 +732,9 @@ const handleRefresh = React.useCallback(() => {
           
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching medicine data');
+                setLoading(true);
+                setRefreshKey(prev => prev + 1);
               }} />
               
               <ActionButtons.MonthYear

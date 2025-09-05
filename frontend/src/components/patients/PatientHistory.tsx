@@ -1490,8 +1490,15 @@ const PatientHistory: React.FC = () => {
               
               <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching patient history data');
+                setIsLoadingPatients(true);
+                setIsLoadingDoctors(true);
+                setIsLoadingHistory(true);
+                loadData().finally(() => {
+                  setIsLoadingPatients(false);
+                  setIsLoadingDoctors(false);
+                  setIsLoadingHistory(false);
+                });
               }} />
               
               <ActionButtons.MonthYear

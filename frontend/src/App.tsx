@@ -10,10 +10,12 @@ import { Toaster } from '@/components/ui/toaster';
 import LoginPage from '@/components/auth/LoginPage';
 import ForgotPasswordPage from '@/components/auth/ForgotPasswordPage';
 import ModernSidebar from '@/components/layout/ModernSidebar';
+import DatabaseFavicon from '@/components/DatabaseFavicon';
 import { cn } from '@/lib/utils';
 import './App.css';
 
 import { loadWebsiteSettings } from '@/utils/api';
+import { faviconService } from '@/services/faviconService';
 import AppRoutes from '@/components/AppRoutes';
 
 const queryClient = new QueryClient();
@@ -26,6 +28,21 @@ function App() {
 
   // Load website settings (title, favicon) on app start using unified API
   useEffect(() => {
+    console.log('🚀 App component mounted, settings should load...');
+    
+    // Force favicon update immediately
+    const forceFaviconUpdate = async () => {
+      console.log('🔥 Force updating favicon...');
+      try {
+        const success = await faviconService.forceRefresh();
+        console.log('🔥 Favicon force update result:', success);
+      } catch (error) {
+        console.error('🔥 Favicon force update error:', error);
+      }
+    };
+    
+    forceFaviconUpdate();
+    
     const loadSettings = async () => {
       try {
         console.log('🔗 Loading website settings via unified API...');
@@ -92,6 +109,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
+        <DatabaseFavicon autoRefresh={true} />
         <div className="App">
           {!settingsLoaded ? (
             <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
@@ -125,6 +143,7 @@ function App() {
               </main>
             </div>
           )}
+          <DatabaseFavicon autoRefresh={true} />
           <Toaster />
         </div>
       </Router>

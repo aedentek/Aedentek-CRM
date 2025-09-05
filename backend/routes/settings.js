@@ -229,10 +229,35 @@ router.post('/settings', async (req, res) => {
   }
 });
 
+// PUT route for updating settings with full object
+router.put('/settings', async (req, res) => {
+  try {
+    const { setting_key, setting_value, file_path } = req.body;
+    const [result] = await db.execute(
+      'UPDATE app_settings SET setting_value = ?, file_path = ? WHERE setting_key = ?',
+      [setting_value, file_path || null, setting_key]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Setting not found' });
+    }
+    
+    res.json({ 
+      setting_key, 
+      setting_value, 
+      file_path, 
+      message: 'Setting updated successfully' 
+    });
+  } catch (err) {
+    console.error('Error updating setting:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads', 'patients');
+    const uploadPath = path.join(__dirname, '..', 'Photos', 'settings');
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -240,7 +265,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'new_file_' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'settings_' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 const upload = multer({ storage: storage });
@@ -254,7 +279,7 @@ router.post('/upload-settings-file', upload.single('file'), (req, res) => {
       message: 'Settings file uploaded successfully', 
       filename: req.file.filename,
       filePath: req.file.path,
-      url: `/uploads/patients/${req.file.filename}`
+      url: `/Photos/settings/${req.file.filename}`
     });
   } catch (err) {
     console.error('Error uploading settings file:', err);

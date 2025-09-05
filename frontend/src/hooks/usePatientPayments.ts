@@ -64,7 +64,7 @@ const usePatientPayments = (): UsePatientPaymentsResult => {
     totalPaid: 0,
     totalPending: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);

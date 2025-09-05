@@ -111,7 +111,7 @@ const PatientPaymentFees: React.FC = () => {
     totalPaid: 0,
     totalPending: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -121,9 +121,11 @@ const PatientPaymentFees: React.FC = () => {
   const recordsPerPage = 10;
 
   // Direct API functions (replacing hook methods)
-  const loadPatients = async () => {
+  const loadPatients = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       setError(null);
       const response = await PatientPaymentAPI.getAll(selectedMonth, selectedYear, currentPage, recordsPerPage);
       
@@ -165,12 +167,14 @@ const PatientPaymentFees: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
-  const refreshData = async () => {
-    await loadPatients();
+  const refreshData = async (showLoadingSpinner = true) => {
+    await loadPatients(showLoadingSpinner);
   };
 
   const applyFilter = async () => {
@@ -579,7 +583,7 @@ const PatientPaymentFees: React.FC = () => {
                 <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Patient Payment Management</h1>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Payment Management</h1>
               </div>
             </div>
             

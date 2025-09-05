@@ -67,7 +67,7 @@ const GeneralStock: React.FC = () => {
   const [filterMonth, setFilterMonth] = useState<number | null>(new Date().getMonth() + 1); // Also 1-based
   const [filterYear, setFilterYear] = useState<number | null>(currentYear);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -755,8 +755,9 @@ const GeneralStock: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching general stock data');
+                  setLoading(true);
+                  setRefreshKey(prev => prev + 1);
                 }}
                 loading={loading}
               />

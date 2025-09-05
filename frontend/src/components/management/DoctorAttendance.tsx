@@ -42,7 +42,7 @@ const DoctorAttendance: React.FC = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<DoctorAttendance[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Month and year state for filtering
   const months = [
@@ -374,8 +374,9 @@ const DoctorAttendance: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching doctor attendance data');
+                  setLoading(true);
+                  Promise.all([loadDoctors(), loadAttendanceRecords()]).finally(() => setLoading(false));
                 }}
                 loading={loading}
                 disabled={loading}

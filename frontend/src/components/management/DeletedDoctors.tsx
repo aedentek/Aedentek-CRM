@@ -41,7 +41,7 @@ const DeletedDoctors: React.FC = () => {
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadDeletedDoctors();
@@ -153,8 +153,8 @@ const DeletedDoctors: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching deleted doctors data');
+                  loadDeletedDoctors();
                 }}
                 loading={loading}
                 disabled={loading}

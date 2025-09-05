@@ -87,7 +87,7 @@ const CorporateDashboard: React.FC<DashboardProps> = ({ user }) => {
   // Set custom page title  
   usePageTitle('Dashboard - Gandhi Bai Healthcare');
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [stats, setStats] = useState<DashboardStats>({
     totalPatients: 2847,

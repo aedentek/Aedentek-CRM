@@ -68,7 +68,7 @@ const GeneralAccounts: React.FC = () => {
   usePageTitle();
 
   const [accounts, setAccounts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {
@@ -496,8 +496,9 @@ const GeneralAccounts: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching general accounts data');
+                  setLoading(true);
+                  setRefreshKey(prev => prev + 1);
                 }}
                 loading={loading}
               />

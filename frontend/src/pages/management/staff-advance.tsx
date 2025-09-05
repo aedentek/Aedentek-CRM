@@ -64,7 +64,7 @@ const StaffAdvancePage: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Dashboard stats
   const [allAdvances, setAllAdvances] = useState<StaffAdvance[]>([]);
@@ -475,8 +475,9 @@ const StaffAdvancePage: React.FC = () => {
             
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching staff advance data');
+                setIsLoading(true);
+                loadData().finally(() => setIsLoading(false));
               }} />
               
               <ActionButtons.MonthYear

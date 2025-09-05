@@ -58,7 +58,7 @@ const DoctorSalary: React.FC = () => {
   usePageTitle();
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -198,9 +198,11 @@ const DoctorSalary: React.FC = () => {
     });
   }, [filterMonth, filterYear, doctors]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       console.log('🩺 Fetching doctors with salary information...');
       console.log('📅 Filter Month/Year:', filterMonth, filterYear);
       
@@ -227,12 +229,16 @@ const DoctorSalary: React.FC = () => {
       }
       
       setDoctors(response || []);
-      setLoading(false); // Set loading to false immediately after setting doctors
+      if (showLoadingSpinner) {
+        setLoading(false); // Set loading to false immediately after setting doctors
+      }
     } catch (error) {
       console.error('Error fetching doctors:', error);
       toast.error('Failed to fetch doctor data');
       setDoctors([]);
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -607,8 +613,8 @@ const DoctorSalary: React.FC = () => {
               
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching doctor salary data');
+                  fetchDoctors(true);
                 }}
                 loading={loading}
               />

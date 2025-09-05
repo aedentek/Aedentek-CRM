@@ -45,7 +45,7 @@ const Administration: React.FC = () => {
 	usePageTitle();
 	const [users, setUsers] = useState<User[]>([]);
 	const [roles, setRoles] = useState<any[]>([]);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [statusFilter, setStatusFilter] = useState('All');
 	const [editUser, setEditUser] = useState<User | null>(null);

@@ -63,7 +63,7 @@ const DeletedStaff: React.FC = () => {
   const [deletedByFilter, setDeletedByFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [restoreStaff, setRestoreStaff] = useState<Staff | null>(null);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
@@ -238,8 +238,8 @@ const DeletedStaff: React.FC = () => {
             
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching deleted staff data');
+                loadDeletedStaff();
               }} />
 
               <Button 

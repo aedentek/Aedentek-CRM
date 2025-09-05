@@ -33,7 +33,7 @@ const GeneralSuppliers: React.FC = () => {
 
   const { toast } = useToast();
   const [suppliers, setSuppliers] = useState<GeneralSupplier[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<GeneralSupplier | null>(null);
@@ -80,22 +80,30 @@ const GeneralSuppliers: React.FC = () => {
       setLoading(false);
     }
   };
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const data = await (await import('@/services/databaseService')).DatabaseService.getAllGeneralSuppliers();
-        setSuppliers(data.map((sup: any) => ({
-          ...sup,
-          id: sup.id.toString(),
-          contactPerson: sup.contact_person || sup.contactPerson || '',
-          createdAt: sup.created_at || sup.createdAt || '',
-        })));
-      } catch (e) {
-        // Optionally show error
-      } finally {
+
+  const loadSuppliers = async (showLoadingSpinner = false) => {
+    try {
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
+      const data = await (await import('@/services/databaseService')).DatabaseService.getAllGeneralSuppliers();
+      setSuppliers(data.map((sup: any) => ({
+        ...sup,
+        id: sup.id.toString(),
+        contactPerson: sup.contact_person || sup.contactPerson || '',
+        createdAt: sup.created_at || sup.createdAt || '',
+      })));
+    } catch (e) {
+      // Optionally show error
+    } finally {
+      if (showLoadingSpinner) {
         setLoading(false);
       }
-    })();
+    }
+  };
+
+  React.useEffect(() => {
+    loadSuppliers();
   }, []);
 
   // Export CSV function
@@ -314,7 +322,8 @@ const GeneralSuppliers: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching general suppliers data');
+                  loadSuppliers(true);
                 }}
                 loading={loading}
               />

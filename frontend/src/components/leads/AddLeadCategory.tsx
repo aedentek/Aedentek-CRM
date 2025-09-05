@@ -32,7 +32,7 @@ const AddLeadCategory: React.FC = () => {
   usePageTitle();
 
   const [categories, setCategories] = React.useState<LeadCategory[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isAddingCategory, setIsAddingCategory] = React.useState(false);
   const [isEditingCategory, setIsEditingCategory] = React.useState(false);

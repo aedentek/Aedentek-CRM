@@ -55,7 +55,7 @@ const Settings: React.FC = () => {
   usePageTitle();
 
   const [settings, setSettings] = useState<Setting[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Only show loading on manual refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [editingSetting, setEditingSetting] = useState<Setting | null>(null);
@@ -95,8 +95,11 @@ const Settings: React.FC = () => {
     loadSettings();
   }, []);
 
-  const loadSettings = async () => {
+  const loadSettings = async (showLoadingSpinner = false) => {
     try {
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       console.log('🔗 Loading settings using unified API...');
       
       const data = await settingsAPI.getAll();
@@ -117,7 +120,9 @@ const Settings: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -266,7 +271,7 @@ const Settings: React.FC = () => {
             <Filter className="h-4 w-4 mr-2" />
             Filters
           </Button>
-          <Button className="modern-btn modern-btn-outline" onClick={loadSettings}>
+          <Button className="modern-btn modern-btn-outline" onClick={() => loadSettings(true)}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>

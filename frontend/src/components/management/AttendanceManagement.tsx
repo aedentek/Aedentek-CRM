@@ -61,7 +61,7 @@ const AttendanceManagement: React.FC = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<StaffAttendance[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStaff, setFilteredStaff] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Month and year state for filtering
   const months = [

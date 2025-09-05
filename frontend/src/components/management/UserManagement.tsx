@@ -28,12 +28,14 @@ const UserManagement: React.FC = () => {
   usePageTitle();
 
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   
   // Fetch users from backend
-  const fetchUsers = async () => {
+  const fetchUsers = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       console.log('🔍 Fetching users from backend...');
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users`);
       console.log('🔗 Users fetch response status:', res.status);
@@ -60,7 +62,9 @@ const UserManagement: React.FC = () => {
       console.error('❌ Failed to fetch users:', err);
       setUsers([]);
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -252,8 +256,8 @@ const UserManagement: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching users data');
+                fetchUsers(true);
               }} />
               <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-medical">
                 <Plus className="w-4 h-4 mr-2" />

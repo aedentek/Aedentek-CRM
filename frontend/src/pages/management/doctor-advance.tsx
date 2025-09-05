@@ -60,7 +60,8 @@ const DoctorAdvancePage: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Dashboard stats
   const [allAdvances, setAllAdvances] = useState<DoctorAdvance[]>([]);
@@ -498,8 +499,9 @@ const DoctorAdvancePage: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching doctor advance data');
+                  setIsLoading(true);
+                  setRefreshKey(prev => prev + 1);
                 }}
                 loading={isLoading}
               />

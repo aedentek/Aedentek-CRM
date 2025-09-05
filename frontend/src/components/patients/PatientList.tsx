@@ -248,7 +248,7 @@ const PatientList: React.FC = () => {
   
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Only show loading on manual refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   
@@ -357,8 +357,10 @@ const PatientList: React.FC = () => {
     return `P${id.toString().padStart(4, '0')}`;
   };
 
-  const loadPatients = async () => {
-    setLoading(true);
+  const loadPatients = async (showLoadingSpinner = false) => {
+    if (showLoadingSpinner) {
+      setLoading(true);
+    }
     try {
       console.log('🔗 Loading patients via unified API...');
       // Try unified API first, fall back to DatabaseService if needed
@@ -552,7 +554,9 @@ const PatientList: React.FC = () => {
           variant: "destructive"
         });
       } finally {
-        setLoading(false);
+        if (showLoadingSpinner) {
+          setLoading(false);
+        }
       }
     };  const filterPatients = () => {
     let filtered = [...patients]; // Create a copy to sort
@@ -1478,8 +1482,8 @@ const PatientList: React.FC = () => {
           
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - loading patients with spinner');
+                loadPatients(true); // Show loading spinner only on manual refresh
               }} />
               
               <ActionButtons.MonthYear
@@ -1698,104 +1702,116 @@ const PatientList: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPatients
-                .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
-                .map((patient, idx) => (
-                  <TableRow key={patient.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{(currentPage - 1) * rowsPerPage + idx + 1}</TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center">
-                      <PatientPhoto 
-                        key={`${patient.id}-${patient.photo}-${photoRefreshTrigger}`}
-                        photoPath={patient.photo} 
-                        alt={patient.name}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mx-auto border bg-muted"
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm whitespace-nowrap">
-                      <button 
-                        onClick={() => {
-                          try {
-                            // Use raw numeric ID for navigation - the PatientBiodata component will handle the format
-                            const patientIdForRoute = patient.id;
-                            console.log('🔗 Button clicked for patient details:', {
-                              patientId: patient.id,
-                              originalId: patient.originalId,
-                              name: patient.name,
-                              patientIdForRoute: patientIdForRoute,
-                              routeWillBe: `/patients/details/${patientIdForRoute}`
-                            });
-                            console.log('🚀 Attempting navigation to:', `/patients/details/${patientIdForRoute}`);
-                            
-                            // Use React Router navigate
-                            navigate(`/patients/details/${patientIdForRoute}`);
-                            
-                            console.log('✅ Navigation call completed');
-                          } catch (error) {
-                            console.error('❌ Navigation error:', error);
-                          }
-                        }}
-                        className="text-primary font-medium hover:underline hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 p-1 h-auto text-xs sm:text-sm cursor-pointer rounded-md inline-flex items-center gap-1"
-                        title={`View full details for ${patient.name} (Click to open comprehensive patient information)`}
-                      >
-                        
-                        {patient.id?.startsWith('P') ? patient.id : `P${String(patient.originalId || patient.id).padStart(4, '0')}`}
-                      </button>
-                    </TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm max-w-[100px] sm:max-w-[120px] truncate">{patient.name}</TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.age}</TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.gender}</TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.phone}</TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
-                      {patient.admissionDate && 
-                       patient.admissionDate instanceof Date && 
-                       !isNaN(patient.admissionDate.getTime()) && 
-                       patient.admissionDate.getFullYear() >= 1900 && 
-                       patient.admissionDate.getFullYear() <= 2100
-                        ? format(patient.admissionDate, 'dd/MM/yyyy') 
-                        : <span className="text-gray-400 text-xs">Not Set</span>}
-                    </TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center whitespace-nowrap">
-                      <Badge className={`${getStatusBadge(patient.status)} text-xs`}>
-                        {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center whitespace-nowrap">
-                      <div className="action-buttons-container">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewPatient(patient)}
-                          className="action-btn-lead action-btn-view h-8 w-8 sm:h-9 sm:w-9 p-0"
-                          title="View Patient"
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="text-sm text-gray-600">Loading patients...</div>
+                      <div className="text-xs text-gray-400">Please wait while we fetch patient data</div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPatients
+                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                  .map((patient, idx) => (
+                    <TableRow key={patient.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{(currentPage - 1) * rowsPerPage + idx + 1}</TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center">
+                        <PatientPhoto 
+                          key={`${patient.id}-${patient.photo}-${photoRefreshTrigger}`}
+                          photoPath={patient.photo} 
+                          alt={patient.name}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover mx-auto border bg-muted"
+                        />
+                      </TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm whitespace-nowrap">
+                        <button 
+                          onClick={() => {
+                            try {
+                              // Use raw numeric ID for navigation - the PatientBiodata component will handle the format
+                              const patientIdForRoute = patient.id;
+                              console.log('🔗 Button clicked for patient details:', {
+                                patientId: patient.id,
+                                originalId: patient.originalId,
+                                name: patient.name,
+                                patientIdForRoute: patientIdForRoute,
+                                routeWillBe: `/patients/details/${patientIdForRoute}`
+                              });
+                              console.log('🚀 Attempting navigation to:', `/patients/details/${patientIdForRoute}`);
+                              
+                              // Use React Router navigate
+                              navigate(`/patients/details/${patientIdForRoute}`);
+                              
+                              console.log('✅ Navigation call completed');
+                            } catch (error) {
+                              console.error('❌ Navigation error:', error);
+                            }
+                          }}
+                          className="text-primary font-medium hover:underline hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 p-1 h-auto text-xs sm:text-sm cursor-pointer rounded-md inline-flex items-center gap-1"
+                          title={`View full details for ${patient.name} (Click to open comprehensive patient information)`}
                         >
-                          <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(patient)}
-                          className="action-btn-lead action-btn-edit h-8 w-8 sm:h-9 sm:w-9 p-0"
-                          title="Edit Patient"
-                        >
-                          <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(patient)}
-                          className="action-btn-lead action-btn-delete h-8 w-8 sm:h-9 sm:w-9 p-0"
-                          title="Delete Patient"
-                        >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          
+                          {patient.id?.startsWith('P') ? patient.id : `P${String(patient.originalId || patient.id).padStart(4, '0')}`}
+                        </button>
+                      </TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm max-w-[100px] sm:max-w-[120px] truncate">{patient.name}</TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.age}</TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.gender}</TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{patient.phone}</TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
+                        {patient.admissionDate && 
+                         patient.admissionDate instanceof Date && 
+                         !isNaN(patient.admissionDate.getTime()) && 
+                         patient.admissionDate.getFullYear() >= 1900 && 
+                         patient.admissionDate.getFullYear() <= 2100
+                          ? format(patient.admissionDate, 'dd/MM/yyyy') 
+                          : <span className="text-gray-400 text-xs">Not Set</span>}
+                      </TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center whitespace-nowrap">
+                        <Badge className={`${getStatusBadge(patient.status)} text-xs`}>
+                          {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center whitespace-nowrap">
+                        <div className="action-buttons-container">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewPatient(patient)}
+                            className="action-btn-lead action-btn-view h-8 w-8 sm:h-9 sm:w-9 p-0"
+                            title="View Patient"
+                          >
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(patient)}
+                            className="action-btn-lead action-btn-edit h-8 w-8 sm:h-9 sm:w-9 p-0"
+                            title="Edit Patient"
+                          >
+                            <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(patient)}
+                            className="action-btn-lead action-btn-delete h-8 w-8 sm:h-9 sm:w-9 p-0"
+                            title="Delete Patient"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
           
-          {filteredPatients.length === 0 && (
+          {!loading && filteredPatients.length === 0 && (
             <div className="text-center py-12 bg-white">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-600 mb-2">No patients found</h3>

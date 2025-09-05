@@ -12,6 +12,9 @@ export const useFaviconFromDB = (autoRefresh = true) => {
         console.log('🎯 Loading favicon from database...');
         setError(null);
         
+        // Add a small delay to ensure backend is ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const success = await faviconService.setFaviconFromDB();
         if (success) {
           const url = await faviconService.fetchFaviconFromDB();

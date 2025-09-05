@@ -29,7 +29,7 @@ const DoctorCategory: React.FC = () => {
   usePageTitle();
 
   const [categories, setCategories] = React.useState<DoctorCategoryType[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [isAddingCategory, setIsAddingCategory] = React.useState(false);
   const [isEditingCategory, setIsEditingCategory] = React.useState(false);
   const [editingCategoryId, setEditingCategoryId] = React.useState<number | null>(null);
@@ -47,9 +47,11 @@ const DoctorCategory: React.FC = () => {
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       const data = await DatabaseService.getAllDoctorCategories();
       setCategories(data);
     } catch (error) {
@@ -60,7 +62,9 @@ const DoctorCategory: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -244,8 +248,8 @@ const DoctorCategory: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching doctor categories data');
+                  loadCategories(true);
                 }}
                 loading={loading}
               />

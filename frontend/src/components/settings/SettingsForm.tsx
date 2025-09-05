@@ -60,7 +60,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
         formData.append('file', selectedFile);
         formData.append('settingKey', setting.setting_key);
 
-        const uploadResponse = await fetch('/api/settings/upload-file', {
+        const uploadResponse = await fetch('/api/upload-settings-file', {
           method: 'POST',
           body: formData,
         });

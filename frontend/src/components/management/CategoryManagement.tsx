@@ -49,7 +49,7 @@ interface MedicineCategory {
 
 const CategoryManagement: React.FC = () => {
   const [categories, setCategories] = useState<MedicineCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   React.useEffect(() => {
@@ -418,8 +418,9 @@ const CategoryManagement: React.FC = () => {
           
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching category data');
+                setLoading(true);
+                setRefreshKey(prev => prev + 1);
               }} />
               
               <ActionButtons.MonthYear

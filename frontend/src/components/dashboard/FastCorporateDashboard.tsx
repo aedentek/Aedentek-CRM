@@ -195,7 +195,7 @@ const CorporateDashboard: React.FC<DashboardProps> = memo(({ user }) => {
   const navigate = useNavigate();
   usePageTitle('Dashboard - Gandhi Bai Healthcare');
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');

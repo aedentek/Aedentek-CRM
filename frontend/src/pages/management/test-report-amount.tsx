@@ -97,9 +97,15 @@ const TestReportAmountPage: React.FC = () => {
   const [status, setStatus] = useState<'Pending' | 'Completed' | 'Cancelled'>('Pending');
 
   useEffect(() => {
-    loadPatients();
-    loadTestReports();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    await Promise.all([
+      loadPatients(),
+      loadTestReports()
+    ]);
+  };
 
   useEffect(() => {
     filterPatients();
@@ -485,8 +491,9 @@ const TestReportAmountPage: React.FC = () => {
                 All Patients ({months[selectedMonth - 1]} {selectedYear})
               </Button>
               <ActionButtons.Refresh onClick={() => {
-                console.log('🔄 Manual refresh triggered - refreshing entire page');
-                window.location.reload();
+                console.log('🔄 Manual refresh triggered - fetching test report data');
+                setIsLoading(true);
+                loadData().finally(() => setIsLoading(false));
               }} />
               {/* <Button 
                 onClick={async () => {

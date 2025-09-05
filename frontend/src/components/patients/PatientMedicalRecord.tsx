@@ -1358,8 +1358,13 @@ const PatientMedicalRecord: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:flex-shrink-0">
               <div className="flex gap-2">
                 <ActionButtons.Refresh onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching patient medical records');
+                  setIsLoadingPatients(true);
+                  setIsLoadingRecords(true);
+                  loadData().finally(() => {
+                    setIsLoadingPatients(false);
+                    setIsLoadingRecords(false);
+                  });
                 }} />
                 
                 <ActionButtons.MonthYear

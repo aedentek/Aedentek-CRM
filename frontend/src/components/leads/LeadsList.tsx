@@ -43,7 +43,7 @@ const LeadsList: React.FC = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [categories, setCategories] = useState<LeadCategory[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Only show loading on manual refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   
@@ -89,9 +89,11 @@ const LeadsList: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const loadLeads = async () => {
+  const loadLeads = async (showLoadingSpinner = false) => {
     try {
-      setLoading(true);
+      if (showLoadingSpinner) {
+        setLoading(true);
+      }
       const data = await DatabaseService.getAllLeads();
       setLeads(data || []);
     } catch (error) {
@@ -102,7 +104,9 @@ const LeadsList: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -317,8 +321,8 @@ const LeadsList: React.FC = () => {
             <div className="flex flex-row gap-2 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching leads data');
+                  loadLeads(true);
                 }}
               />
               

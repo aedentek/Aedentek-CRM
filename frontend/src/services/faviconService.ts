@@ -38,7 +38,7 @@ class FaviconService {
         return cached.url;
       }
 
-      const response = await fetch(`${this.baseURL}/settings/favicon`);
+      const response = await fetch(`${this.baseURL}/favicon`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch favicon: ${response.status}`);
@@ -70,15 +70,23 @@ class FaviconService {
     try {
       const faviconUrl = await this.fetchFaviconFromDB();
       
-      // Build full URL if it's a relative path
-      const fullFaviconUrl = faviconUrl.startsWith('/') 
-        ? `${this.baseURL.replace('/api', '')}${faviconUrl}`
-        : faviconUrl;
+      // Build full URL - handle both API URL formats
+      let fullFaviconUrl;
+      if (faviconUrl.startsWith('/')) {
+        // Remove /api from baseURL if it exists
+        const baseWithoutApi = this.baseURL.replace('/api', '');
+        fullFaviconUrl = `${baseWithoutApi}${faviconUrl}`;
+      } else {
+        fullFaviconUrl = faviconUrl;
+      }
 
       console.log('🔧 Setting favicon to:', fullFaviconUrl);
+      console.log('🔧 Base URL:', this.baseURL);
+      console.log('🔧 Favicon URL from DB:', faviconUrl);
       
       // Remove existing favicon links
       const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+      console.log('🗑️ Removing existing favicon links:', existingFavicons.length);
       existingFavicons.forEach(link => link.remove());
       
       // Add new favicon links with cache busting
@@ -90,6 +98,7 @@ class FaviconService {
       favicon.type = 'image/x-icon';
       favicon.href = `${fullFaviconUrl}?v=${timestamp}`;
       document.head.appendChild(favicon);
+      console.log('✅ Added standard favicon link:', favicon.href);
       
       // Shortcut icon
       const shortcutIcon = document.createElement('link');
@@ -97,12 +106,14 @@ class FaviconService {
       shortcutIcon.type = 'image/x-icon';
       shortcutIcon.href = `${fullFaviconUrl}?v=${timestamp}`;
       document.head.appendChild(shortcutIcon);
+      console.log('✅ Added shortcut icon link:', shortcutIcon.href);
       
       // Apple touch icon
       const appleTouchIcon = document.createElement('link');
       appleTouchIcon.rel = 'apple-touch-icon';
       appleTouchIcon.href = `${fullFaviconUrl}?v=${timestamp}`;
       document.head.appendChild(appleTouchIcon);
+      console.log('✅ Added apple-touch-icon link:', appleTouchIcon.href);
       
       console.log('✅ Database favicon set successfully!');
       

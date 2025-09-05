@@ -121,7 +121,7 @@ const DoctorManagement: React.FC = () => {
   const navigate = useNavigate();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Only show loading on manual refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categories, setCategories] = useState<DoctorCategory[]>([]);
@@ -429,8 +429,9 @@ const DoctorManagement: React.FC = () => {
             <div className="flex flex-row sm:flex-row gap-1 sm:gap-3 w-full sm:w-auto">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching doctors data');
+                  setLoading(true);
+                  loadDoctors().finally(() => setLoading(false));
                 }}
                 loading={false}
                 disabled={false}

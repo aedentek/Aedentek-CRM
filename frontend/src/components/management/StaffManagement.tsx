@@ -102,7 +102,7 @@ const StaffManagement: React.FC = () => {
   };
   const [deleteStaff, setDeleteStaff] = useState<any | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const rowsPerPage = 10;
 
   // Status badge styling
@@ -115,19 +115,20 @@ const StaffManagement: React.FC = () => {
   };
 
   // Fetch staff from MySQL database
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
+  const fetchData = async (showLoadingSpinner = false) => {
+    try {
+      if (showLoadingSpinner) {
         setLoading(true);
-        
-        // Fetch staff data
-        const staffData = await DatabaseService.getAllStaff();
-        console.log('Fetched staff from MySQL:', staffData);
-        console.log('First staff documents:', staffData[0]?.documents);
-        setStaff(staffData);
+      }
+      
+      // Fetch staff data
+      const staffData = await DatabaseService.getAllStaff();
+      console.log('Fetched staff from MySQL:', staffData);
+      console.log('First staff documents:', staffData[0]?.documents);
+      setStaff(staffData);
 
-        // Fetch staff categories
-        const categories = await DatabaseService.getAllStaffCategories();
+      // Fetch staff categories
+      const categories = await DatabaseService.getAllStaffCategories();
         console.log('Fetched staff categories:', categories);
         setStaffCategories(categories);
       } catch (error) {
@@ -136,10 +137,13 @@ const StaffManagement: React.FC = () => {
         const localStaff = JSON.parse(localStorage.getItem('staff') || '[]');
         setStaff(localStaff);
       } finally {
-        setLoading(false);
+        if (showLoadingSpinner) {
+          setLoading(false);
+        }
       }
     };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -363,11 +367,11 @@ const StaffManagement: React.FC = () => {
             <div className="flex items-center gap-2 sm:gap-3">
               <ActionButtons.Refresh 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered - refreshing entire page');
-                  window.location.reload();
+                  console.log('🔄 Manual refresh triggered - fetching staff data');
+                  fetchData(true);
                 }}
-                loading={false}
-                disabled={false}
+                loading={loading}
+                disabled={loading}
               />
               <Button 
                 onClick={exportToCSV}
