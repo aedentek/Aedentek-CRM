@@ -11,7 +11,7 @@ const config = {
   user: process.env.DB_USER || 'u745362362_crmusername',
   password: process.env.DB_PASSWORD || 'Aedentek@123#',
   database: process.env.DB_NAME || 'u745362362_crm',
-  port: 3306
+  port: 4000
 };
 
 console.log('Configuration:');

@@ -11,18 +11,14 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || 'Aedentek@123#',
   database: process.env.DB_NAME || 'u745362362_crm',
   waitForConnections: true,
-  connectionLimit: 3, // Reduced for better stability on shared hosting
+  connectionLimit: 2,
   queueLimit: 0,
   ssl: { rejectUnauthorized: false },
-  // Optimized timeouts for production
-  connectTimeout: 20000, // 20 seconds for initial connection
-  idleTimeout: 60000, // 1 minute idle timeout
-  // Keep connection alive settings
+  connectTimeout: 60000,
+  acquireTimeout: 60000,
+  timeout: 60000,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 5000, // 5 seconds
-  // Additional options for shared hosting
-  acquireTimeout: 20000,
-  multipleStatements: false
+  keepAliveInitialDelay: 0
 };
 
 console.log('🔌 Database configuration:', {
