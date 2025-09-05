@@ -59,7 +59,16 @@ class SimpleCertificateService {
   static async getAllCertificates() {
     try {
       console.log('🔍 Fetching all certificates...');
-      const response = await fetch(`${this.baseUrl}/certificates`);
+      
+      // Create timeout controller for 60 seconds (cold start)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+      const response = await fetch(`${this.baseUrl}/certificates`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Failed to fetch certificates: ${error}`);
@@ -68,6 +77,9 @@ class SimpleCertificateService {
       console.log(`✅ Fetched ${result.data?.length || 0} certificates`);
       return result.data || [];
     } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out - Server may be starting up (this can take up to 60 seconds on first load)');
+      }
       console.error('❌ Error fetching certificates:', error);
       throw error;
     }
@@ -76,7 +88,16 @@ class SimpleCertificateService {
   static async getStats() {
     try {
       console.log('📊 Fetching certificate statistics...');
-      const response = await fetch(`${this.baseUrl}/certificates/stats/overview`);
+      
+      // Create timeout controller for 60 seconds (cold start) 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+      const response = await fetch(`${this.baseUrl}/certificates/stats/overview`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Failed to fetch stats: ${error}`);
@@ -85,6 +106,9 @@ class SimpleCertificateService {
       console.log('✅ Fetched certificate stats');
       return result.data || { total: 0, thisMonth: 0, today: 0 };
     } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Stats request timed out - Server may be starting up (this can take up to 60 seconds on first load)');
+      }
       console.error('❌ Error fetching stats:', error);
       throw error;
     }
@@ -209,8 +233,10 @@ const CertificatesSimple: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading certificates:', error);
       toast({
-        title: "Error",
-        description: "Failed to load certificates data",
+        title: "Loading Error",
+        description: error.message.includes('timed out') 
+          ? "Server is starting up, please wait 30-60 seconds and try again" 
+          : "Failed to load certificates data",
         variant: "destructive",
       });
     } finally {
@@ -226,8 +252,10 @@ const CertificatesSimple: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading stats:', error);
       toast({
-        title: "Error",
-        description: "Failed to load statistics",
+        title: "Stats Error", 
+        description: error.message.includes('timed out')
+          ? "Server is starting up, please wait 30-60 seconds and try again"
+          : "Failed to load statistics",
         variant: "destructive",
       });
     }
