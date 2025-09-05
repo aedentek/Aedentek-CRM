@@ -6,7 +6,7 @@ dotenv.config({ quiet: true });
 // MySQL connection config using environment variables with fallback to hardcoded values
 const dbConfig = {
   host: process.env.DB_HOST || 'srv1639.hstgr.io',
-  port: process.env.DB_PORT || 3306,
+  port: process.env.DB_PORT || 4000,
   user: process.env.DB_USER || 'u745362362_crmusername',
   password: process.env.DB_PASSWORD || 'Aedentek@123#',
   database: process.env.DB_NAME || 'u745362362_crm',
