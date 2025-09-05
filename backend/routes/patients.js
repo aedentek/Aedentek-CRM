@@ -288,36 +288,41 @@ router.post('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- PATIENT ATTENDANCE CRUD ENDPOINTS ---
 
-// GET /api/patient-attendance - Get all attendance records
+// GET /api/patient-attendance - Get all active patients with their attendance status for today
 router.get('/patient-attendance', async (req, res) => {
   console.log('📊 GET /patient-attendance requested');
   try {
-    // Query with proper JOIN to get patient information
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    console.log('📅 Fetching attendance for date:', today);
+    
+    // Query to get ALL active patients with their attendance status for today
+    // If no attendance record exists for today, show as "Not Marked"
     const query = `
       SELECT 
-        pa.id,
-        pa.patient_id,
-        COALESCE(p.name, pa.patient_name) as patient_name,
-        COALESCE(p.phone, '') as patient_phone,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.phone as patient_phone,
         p.photo as patient_image,
-        DATE_FORMAT(pa.date, '%Y-%m-%d') as date,
-        pa.status,
-        TIME_FORMAT(pa.check_in_time, '%H:%i') as check_in_time,
-        pa.notes,
+        COALESCE(pa.id, NULL) as attendance_id,
+        '${today}' as date,
+        COALESCE(pa.status, 'Not Marked') as status,
+        COALESCE(TIME_FORMAT(pa.check_in_time, '%H:%i'), '') as check_in_time,
+        COALESCE(pa.notes, '') as notes,
         pa.created_at,
         pa.updated_at
-      FROM patient_attendance pa
-      LEFT JOIN patients p ON pa.patient_id = p.id
-      ORDER BY pa.date DESC, pa.check_in_time DESC
+      FROM patients p
+      LEFT JOIN patient_attendance pa ON p.id = pa.patient_id AND DATE(pa.date) = '${today}'
+      WHERE p.status = 'Active'
+      ORDER BY p.name ASC
     `;
     
     const [rows] = await db.query(query);
     
-    console.log(`✅ Found ${rows.length} attendance records`);
+    console.log(`✅ Found ${rows.length} active patients with attendance status for ${today}`);
     res.json(rows);
   } catch (error) {
-    console.error('❌ Error fetching attendance records:', error);
-    res.status(500).json({ error: 'Failed to fetch attendance records' });
+    console.error('❌ Error fetching patient attendance:', error);
+    res.status(500).json({ error: 'Failed to fetch patient attendance' });
   }
 });
 
@@ -444,6 +449,70 @@ router.put('/patient-attendance/:id/status', async (req, res) => {
     } catch (error) {
         console.error('Error updating attendance status:', error);
         res.status(500).json({ error: 'Failed to update attendance status' });
+    }
+});
+
+// POST /api/patient-attendance/mark - Mark attendance for a patient
+router.post('/patient-attendance/mark', async (req, res) => {
+    try {
+        const { patient_id, status, notes = '', check_in_time = null } = req.body;
+        const today = new Date().toISOString().split('T')[0]; // Get today's date
+        
+        console.log('📋 Marking attendance:', { patient_id, status, today, check_in_time, notes });
+        
+        // Check if attendance record already exists for today
+        const [existingRecord] = await db.query(
+            'SELECT id FROM patient_attendance WHERE patient_id = ? AND DATE(date) = ?',
+            [patient_id, today]
+        );
+
+        if (existingRecord.length > 0) {
+            // Update existing record
+            await db.query(
+                `UPDATE patient_attendance 
+                 SET status = ?, notes = ?, check_in_time = ?, updated_at = NOW()
+                 WHERE patient_id = ? AND DATE(date) = ?`,
+                [status, notes, check_in_time, patient_id, today]
+            );
+            
+            console.log('✅ Updated existing attendance record');
+        } else {
+            // Create new attendance record
+            await db.query(
+                `INSERT INTO patient_attendance 
+                 (patient_id, patient_name, date, status, check_in_time, notes, created_at, updated_at)
+                 SELECT ?, p.name, ?, ?, ?, ?, NOW(), NOW()
+                 FROM patients p WHERE p.id = ?`,
+                [patient_id, today, status, check_in_time, notes, patient_id]
+            );
+            
+            console.log('✅ Created new attendance record');
+        }
+
+        // Return the updated record with patient info
+        const [updatedRecord] = await db.query(
+            `SELECT 
+                p.id as patient_id,
+                p.name as patient_name,
+                p.phone as patient_phone,
+                p.photo as patient_image,
+                pa.id as attendance_id,
+                DATE_FORMAT(pa.date, '%Y-%m-%d') as date,
+                pa.status,
+                TIME_FORMAT(pa.check_in_time, '%H:%i') as check_in_time,
+                pa.notes,
+                pa.created_at,
+                pa.updated_at
+            FROM patients p
+            LEFT JOIN patient_attendance pa ON p.id = pa.patient_id AND DATE(pa.date) = ?
+            WHERE p.id = ?`,
+            [today, patient_id]
+        );
+
+        res.json(updatedRecord[0]);
+    } catch (error) {
+        console.error('❌ Error marking attendance:', error);
+        res.status(500).json({ error: 'Failed to mark attendance' });
     }
 });
 
