@@ -268,6 +268,33 @@ app.get('/debug-env', (req, res) => {
   });
 });
 
+// Test database connection endpoint
+app.get('/test-db', async (req, res) => {
+  try {
+    console.log('🧪 Testing database connection...');
+    const testConnection = await db.getConnection();
+    await testConnection.ping();
+    const [rows] = await testConnection.execute('SELECT 1 as test, NOW() as current_time');
+    testConnection.release();
+    
+    res.status(200).json({
+      status: 'SUCCESS',
+      message: 'Database connection test successful',
+      test_query: rows[0],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database connection test failed',
+      error: error.message,
+      error_code: error.code,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Root route for backend status
 app.get('/', (req, res) => {
   res.status(200).json({ 
