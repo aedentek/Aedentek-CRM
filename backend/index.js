@@ -248,6 +248,26 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Debug endpoint to check environment variables (remove after debugging)
+app.get('/debug-env', (req, res) => {
+  console.log('🔍 Debug endpoint called - checking environment variables');
+  res.status(200).json({
+    environment_variables: {
+      DB_HOST: process.env.DB_HOST || 'NOT SET',
+      DB_USER: process.env.DB_USER || 'NOT SET', 
+      DB_PASSWORD: process.env.DB_PASSWORD ? '***SET***' : 'NOT SET',
+      DB_NAME: process.env.DB_NAME || 'NOT SET',
+      NODE_ENV: process.env.NODE_ENV || 'NOT SET',
+      PORT: process.env.PORT || 'NOT SET'
+    },
+    render_info: {
+      timestamp: new Date().toISOString(),
+      platform: process.platform,
+      node_version: process.version
+    }
+  });
+});
+
 // Root route for backend status
 app.get('/', (req, res) => {
   res.status(200).json({ 
