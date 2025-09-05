@@ -63,16 +63,16 @@ class PatientAttendanceAPI {
       if (!response.ok) throw new Error('Failed to fetch patients');
       const data = await response.json();
       
-      // Normalize patient data and filter only active patients
+      // Normalize patient data - show all non-deleted patients
       return data
-        .filter((p: any) => p.status === 'Active')
+        .filter((p: any) => !p.is_deleted) // Only filter out deleted patients
         .map((p: any) => ({
           id: p.id,
           patient_id: p.patient_id || `P${String(p.id).padStart(4, '0')}`,
           name: p.name,
           phone: p.phone,
           email: p.email || '',
-          status: p.status,
+          status: p.status || 'Active', // Default to Active if no status
           photo: p.photo
         }));
     } catch (error) {
