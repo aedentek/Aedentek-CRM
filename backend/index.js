@@ -103,26 +103,76 @@ console.log('📁 Static file serving configured for uploads and photos only');
 
 console.log('⚡ Optimized MySQL pool connected to srv1639.hstgr.io');
 
-// Test database connection on startup with better error handling
-db.execute('SELECT 1 as test, NOW() as timestamp')
-  .then((results) => {
+// Test database connection on startup with enhanced error handling
+async function testDatabaseConnection() {
+  console.log('🔍 Testing database connection...');
+  console.log('🌐 Environment:', process.env.NODE_ENV || 'development');
+  console.log('🏠 DB Host:', process.env.DB_HOST || 'srv1639.hstgr.io');
+  console.log('👤 DB User:', process.env.DB_USER || 'u745362362_crmusername');
+  console.log('🗃️ DB Name:', process.env.DB_NAME || 'u745362362_crm');
+  
+  try {
+    const [results] = await db.execute('SELECT 1 as test, NOW() as timestamp, @@version as mysql_version');
     console.log('✅ Database connection test successful');
-    console.log('📊 Test result:', results[0][0]);
-    console.log('🔗 Connection details:', {
-      host: process.env.DB_HOST || 'srv1639.hstgr.io',
-      database: process.env.DB_NAME || 'u745362362_crm',
-      ssl: 'enabled'
-    });
-  })
-  .catch((err) => {
+    console.log('📊 Test result:', results[0]);
+    console.log('🔗 MySQL version:', results[0].mysql_version);
+    return true;
+  } catch (err) {
     console.error('❌ Database connection test failed:');
     console.error('   Error Code:', err.code || 'Unknown');
     console.error('   Error Message:', err.message || 'No message');
     console.error('   SQL State:', err.sqlState || 'Unknown');
     console.error('   Error Number:', err.errno || 'Unknown');
+    console.error('   Stack:', err.stack);
+    
+    // Try alternative connection test
+    console.log('🔄 Trying alternative connection method...');
+    try {
+      const connection = await db.getConnection();
+      console.log('✅ Alternative connection successful');
+      connection.release();
+      return true;
+    } catch (altErr) {
+      console.error('❌ Alternative connection also failed:', altErr.message);
+      return false;
+    }
+  }
+}
+
+// Run database test
+testDatabaseConnection();
+
+// Health check endpoint for debugging
+app.get('/api/health', async (req, res) => {
+  try {
+    const [results] = await db.execute('SELECT 1 as test, NOW() as timestamp');
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      test_result: results[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Add debug endpoint for database connection info
+app.get('/api/debug/db', (req, res) => {
+  res.json({
+    host: process.env.DB_HOST || 'srv1639.hstgr.io',
+    user: process.env.DB_USER || 'u745362362_crmusername',
+    database: process.env.DB_NAME || 'u745362362_crm',
+    port: process.env.DB_PORT || 3306,
+    ssl_enabled: true,
+    environment: process.env.NODE_ENV || 'development'
   });
-
-
+});
 
 app.use('/api', stock); 
 app.use('/api', medicine); 
