@@ -43,6 +43,7 @@ function App() {
     
     forceFaviconUpdate();
     
+    useEffect(() => {
     const loadSettings = async () => {
       try {
         console.log('🔗 Loading website settings via unified API...');
@@ -50,12 +51,15 @@ function App() {
         console.log('✅ Website settings applied successfully');
       } catch (error) {
         console.error('❌ Failed to load website settings:', error);
+        // Don't block the UI if settings fail to load
       } finally {
         setSettingsLoaded(true);
       }
     };
 
+    // Load settings in background, don't block UI
     loadSettings();
+  }, []);
   }, []);
 
   useEffect(() => {
@@ -111,14 +115,7 @@ function App() {
       <Router>
         <DatabaseFavicon autoRefresh={true} />
         <div className="App">
-          {!settingsLoaded ? (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading...</p>
-              </div>
-            </div>
-          ) : showForgotPassword ? (
+          {showForgotPassword ? (
             <ForgotPasswordPage onBack={() => {
               setShowForgotPassword(false);
               window.history.pushState(null, '', '/');

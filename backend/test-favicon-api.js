@@ -5,7 +5,7 @@ async function testFaviconAPI() {
   try {
     console.log('Testing favicon API endpoint...');
     
-    const response = await fetch('http://localhost:4000/api/settings/favicon');
+    const response = await fetch('http://localhost:4000/api/favicon');
     console.log('Status:', response.status);
     console.log('Status Text:', response.statusText);
     

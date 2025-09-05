@@ -75,20 +75,35 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Enhanced request logging middleware
 app.use((req, res, next) => {
+  const start = Date.now();
   console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
-  console.log(`📍 Origin: ${req.get('Origin') || 'No Origin'}`);
-  console.log(`📋 User-Agent: ${req.get('User-Agent')?.substring(0, 50) || 'No UA'}...`);
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`� ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+  });
+  
   next();
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('🚨 Error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error', 
-    message: err.message,
-    path: req.path 
-  });
+  
+  // Send appropriate error response
+  if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+    res.status(503).json({ 
+      error: 'Database connection error', 
+      message: 'Unable to connect to database. Please try again later.',
+      path: req.path 
+    });
+  } else {
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+      path: req.path 
+    });
+  }
 });
 
 
@@ -208,23 +223,55 @@ console.log('🏥 Patient Payments middleware registered at /api');
 // Frontend is deployed separately to Hostinger, so no static file serving needed
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'CRM Backend is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await db.query('SELECT 1 as test');
+    
+    res.status(200).json({ 
+      status: 'OK', 
+      message: 'CRM Backend is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'Connected'
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error.message);
+    res.status(503).json({ 
+      status: 'ERROR', 
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'Disconnected',
+      error: error.message
+    });
+  }
 });
 
 // API status endpoint  
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'CRM API is ready',
-    timestamp: new Date().toISOString(),
-    endpoints: 'All API endpoints available'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    await db.query('SELECT 1 as test');
+    
+    res.status(200).json({ 
+      status: 'OK', 
+      message: 'CRM API is ready',
+      timestamp: new Date().toISOString(),
+      endpoints: 'All API endpoints available',
+      database: 'Connected'
+    });
+  } catch (error) {
+    console.error('❌ API health check failed:', error.message);
+    res.status(503).json({ 
+      status: 'ERROR', 
+      message: 'API database connection failed',
+      timestamp: new Date().toISOString(),
+      endpoints: 'API endpoints may be unavailable',
+      database: 'Disconnected',
+      error: error.message
+    });
+  }
 });
 
 // Simple test endpoint for frontend connectivity testing
@@ -272,11 +319,21 @@ console.log('📋 Using existing database tables (table creation skipped for pro
 
 
 // Bind server to all interfaces so external checks can detect the service
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`📝 CRM API endpoints are ready`);
-  console.log(`💾 Database connection established`);
+  
+  // Test database connection at startup
+  try {
+    await db.query('SELECT 1 as test');
+    console.log(`💾 Database connection established successfully`);
+  } catch (error) {
+    console.error(`❌ Database connection failed at startup:`, error.message);
+  }
+  
   console.log(`🔧 Effective PORT env value: ${PORT} (PORT: ${process.env.PORT}, API_PORT: ${process.env.API_PORT})`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️ Database: ${process.env.DB_HOST || 'srv1639.hstgr.io'}`);
 });
 
 

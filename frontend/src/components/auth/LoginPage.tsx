@@ -54,7 +54,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, [navigate]);
 
-  // Load website settings on page load
+  // Load website settings on page load (non-blocking)
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -63,8 +63,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         console.log('✅ Website settings applied successfully');
       } catch (error) {
         console.error('❌ Failed to load settings:', error);
+        // Don't block the login page if settings fail
       }
     };
+    // Load in background without blocking UI
     loadSettings();
   }, []);
 

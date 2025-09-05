@@ -45,7 +45,7 @@ const ConnectionTest = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <strong>Frontend URL:</strong><br />
-            {import.meta.env.VITE_BASE_URL || 'http://localhost:3000'}
+            {import.meta.env.VITE_BASE_URL || 'http://localhost:4000'}
           </div>
           <div>
             <strong>Backend API URL:</strong><br />
