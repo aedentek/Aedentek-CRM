@@ -1062,8 +1062,12 @@ const GeneralStock: React.FC = () => {
               ))}
               {paginatedStockItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                    No stock items found
+                  <TableCell colSpan={11} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900">No stock items found</h3>
+                      <p className="text-sm text-gray-500">Stock items will appear here when added</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

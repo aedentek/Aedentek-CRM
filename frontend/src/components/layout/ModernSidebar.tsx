@@ -38,7 +38,8 @@ import {
   Bell,
   MapPin,
   BarChart3,
-  TestTube
+  TestTube,
+  Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUserPermissions, hasPagePermission, filterMenuItemsByPermissions } from '@/utils/permissions';
@@ -176,8 +177,10 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ user, onLogout, onCollaps
     {
       title: 'Settings',
       icon: Settings,
-      href: '/settings',
-      badge: null
+      submenu: [
+        { title: 'System Settings', href: '/settings', icon: Settings },
+        { title: 'Certificates', href: '/settings/certificates', icon: Award },
+      ]
     }
   ];
 

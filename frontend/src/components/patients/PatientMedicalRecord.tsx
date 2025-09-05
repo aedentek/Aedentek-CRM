@@ -1488,19 +1488,6 @@ const PatientMedicalRecord: React.FC = () => {
             {/* Table Content */}
             {isLoadingComplete && (
               <div className="overflow-x-auto">
-                {filteredRecords.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-500">
-                      <p className="text-lg">No medical records found</p>
-                      <p className="text-sm mt-2">
-                        {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
-                          ? 'Try adjusting your filters or search term'
-                          : 'Start by adding your first medical record'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1513,10 +1500,26 @@ const PatientMedicalRecord: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRecords
-                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                      .map((record, idx) => {
-                        const patient = patients.find(p => String(p.id) === String(record.patientId));
+                    {filteredRecords.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-16">
+                          <div className="flex flex-col items-center justify-center space-y-3">
+                            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900">No medical records found</h3>
+                            <p className="text-sm text-gray-500">
+                              {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
+                                ? 'Try adjusting your filters or search term'
+                                : 'Start by adding your first medical record'
+                              }
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRecords
+                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                        .map((record, idx) => {
+                          const patient = patients.find(p => String(p.id) === String(record.patientId));
                         const isPatientRecord = record.id.toString().startsWith('patient_');
                         return (
                           <TableRow key={record.id}>
@@ -1594,10 +1597,10 @@ const PatientMedicalRecord: React.FC = () => {
                             </TableCell>
                           </TableRow>
                         );
-                      })}
+                      })
+                    )}
                   </TableBody>
                 </Table>
-              )}
             </div>
           )}
           
@@ -2394,8 +2397,12 @@ const PatientMedicalRecord: React.FC = () => {
                       ))}
                       {viewedPatientMedicalRecords.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No medical records found for this patient
+                          <TableCell colSpan={6} className="text-center py-16">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium text-gray-900">No medical records found</h3>
+                              <p className="text-sm text-gray-500">No medical records found for this patient</p>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}

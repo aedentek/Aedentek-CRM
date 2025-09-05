@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { 
   FileText, Users, RefreshCw, Download, Plus, Eye, Edit, Trash2, 
-  Calendar, Activity, TestTube, Receipt, User, X, Phone
+  Calendar, Activity, TestTube, Receipt, User, X, Phone, Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import LoadingScreen from '@/components/shared/LoadingScreen';
@@ -700,29 +700,30 @@ const TestReportAmount: React.FC = () => {
 
         {/* Search and Filter */}
         <div className="crm-controls-container">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="w-full">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search by patient name, ID, phone, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
+                className="pl-10 w-full"
               />
             </div>
-            <div className="w-full sm:w-auto min-w-[200px]">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
-                  <SelectItem value="Discharged">Discharged</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          </div>
+          <div className="w-full sm:w-auto min-w-[200px] mt-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Critical">Critical</SelectItem>
+                <SelectItem value="Discharged">Discharged</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -851,10 +852,14 @@ const TestReportAmount: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {paginatedPatients.length === 0 && (
+                {filteredPatients.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No active patients found
+                    <TableCell colSpan={8} className="text-center py-16 bg-white">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900">No active patients found</h3>
+                        <p className="text-sm text-gray-500">Check if patients are marked as active in the system</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

@@ -1363,11 +1363,17 @@ const PatientPaymentFees: React.FC = () => {
                           <tbody className="divide-y divide-gray-200">
                             {filteredPaymentHistory.length === 0 ? (
                               <tr>
-                                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                                  {(historyFilterMonth || selectedMonth) !== null && (historyFilterYear || selectedYear) !== null 
-                                    ? `No payment records found for ${months[(historyFilterMonth || selectedMonth) - 1]} ${historyFilterYear || selectedYear}`
-                                    : 'No payment history found'
-                                  }
+                                <td colSpan={8} className="text-center py-16">
+                                  <div className="flex flex-col items-center justify-center space-y-3">
+                                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900">No payment records found</h3>
+                                    <p className="text-sm text-gray-500">
+                                      {(historyFilterMonth || selectedMonth) !== null && (historyFilterYear || selectedYear) !== null 
+                                        ? `No payment records found for ${months[(historyFilterMonth || selectedMonth) - 1]} ${historyFilterYear || selectedYear}`
+                                        : 'Payment records will appear here when added'
+                                      }
+                                    </p>
+                                  </div>
                                 </td>
                               </tr>
                             ) : (

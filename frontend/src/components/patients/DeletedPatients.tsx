@@ -493,30 +493,34 @@ const DeletedPatients: React.FC = () => {
           
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              {currentPatients.length === 0 ? (
-                <div className="text-center py-12">
-                  <UserX className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No deleted patients found</h3>
-                  <p className="text-gray-500">There are no deleted patients matching your criteria.</p>
-                </div>
-              ) : (
-                <Table className="crm-table">
-                  <TableHeader>
-                    <TableRow className="crm-table-header-row">
-                      <TableHead className="crm-table-header-cell text-center">Sr No.</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Patient ID</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Name</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Age</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Gender</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Phone</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Deleted Date</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Deleted By</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Status</TableHead>
-                      <TableHead className="crm-table-header-cell text-center">Actions</TableHead>
+              <Table className="crm-table">
+                <TableHeader>
+                  <TableRow className="crm-table-header-row">
+                    <TableHead className="crm-table-header-cell text-center">Sr No.</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Patient ID</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Name</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Age</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Gender</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Phone</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Deleted Date</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Deleted By</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Status</TableHead>
+                    <TableHead className="crm-table-header-cell text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentPatients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-16">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900">No deleted patients found</h3>
+                          <p className="text-sm text-gray-500">There are no deleted patients matching your criteria.</p>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentPatients.map((patient, idx) => (
+                  ) : (
+                    currentPatients.map((patient, idx) => (
                       <TableRow key={patient.id} className="crm-table-row">
                         <TableCell className="crm-table-cell text-center">
                           {startIndex + idx + 1}
@@ -563,18 +567,19 @@ const DeletedPatients: React.FC = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-              {/* Modern CRM Pagination */}
-              {totalPages > 1 && (
-                <div className="crm-pagination-container">
-                  <div className="crm-pagination-info">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredPatients.length)} of {filteredPatients.length} results
-                  </div>
-                  <div className="crm-pagination-controls">
+            {/* Modern CRM Pagination */}
+            {totalPages > 1 && (
+              <div className="crm-pagination-container">
+                <div className="crm-pagination-info">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredPatients.length)} of {filteredPatients.length} results
+                </div>
+                <div className="crm-pagination-controls">
                     <Button
                       variant="outline"
                       size="sm"
@@ -615,7 +620,6 @@ const DeletedPatients: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
           </CardContent>
         </Card>
 

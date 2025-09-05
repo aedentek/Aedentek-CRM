@@ -34,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit2, Trash2, FolderOpen, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, Eye, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, FolderOpen, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, Eye, X, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseService } from '@/services/databaseService';
 
@@ -704,8 +704,12 @@ const CategoryManagement: React.FC = () => {
                   ))}
                   {paginatedCategories.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No categories found
+                      <TableCell colSpan={6} className="text-center py-16">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900">No categories found</h3>
+                          <p className="text-sm text-gray-500">Categories will appear here when added</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}

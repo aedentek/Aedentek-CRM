@@ -14,6 +14,7 @@ import PatientFullyHistory from '@/components/patients/PatientFullyHistory';
 import TestRoute from '@/components/TestRoute';
 import TestReportAmountPage from '@/pages/management/test-report-amount';
 import PatientMedicalRecord from '@/components/patients/PatientMedicalRecord';
+import MinimalCertificateTest from '@/components/certificates/MinimalCertificateTest';
 
 import StaffManagement from '@/components/management/StaffManagement';
 import DeletedStaff from '@/components/management/DeletedStaff';
@@ -136,6 +137,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ user }) => {
       
       {/* Settings Routes */}
       <Route path="/settings" element={<Settings />} />
+      <Route path="/settings/certificates" element={<MinimalCertificateTest />} />
     </Routes>
   );
 };

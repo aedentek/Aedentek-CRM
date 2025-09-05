@@ -32,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit2, Trash2, Package, ShoppingCart, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, X, IndianRupee, Package2, Tag, Building2, FileText } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, ShoppingCart, RefreshCw, Activity, TrendingUp, AlertCircle, Calendar, Download, X, IndianRupee, Package2, Tag, Building2, FileText, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import usePageTitle from '@/hooks/usePageTitle';
 import * as XLSX from 'xlsx';
@@ -914,8 +914,12 @@ const handleRefresh = React.useCallback(() => {
               ))}
               {paginatedProducts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No products found
+                                    <TableCell colSpan={9} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900">No groceries found</h3>
+                      <p className="text-sm text-gray-500">Groceries will appear here when added</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

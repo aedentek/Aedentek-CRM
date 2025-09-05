@@ -62,7 +62,8 @@ export const PAGE_PERMISSIONS_MAP: {[key: string]: {route: string, name: string,
   'leads-list': { route: '/leads/list', name: 'Leads List', category: 'Leads Management' },
   
   // Settings
-  'settings': { route: '/settings', name: 'Settings', category: 'Settings' }
+  'settings': { route: '/settings', name: 'Settings', category: 'Settings' },
+  'certificates': { route: '/settings/certificates', name: 'Certificates', category: 'Settings' }
 };
 
 // Get user permissions from localStorage/context
@@ -97,8 +98,8 @@ export const hasPagePermission = (pageId: string): boolean => {
     return true;
   }
   
-  // Check if user has specific permission
-  return permissions.includes(pageId);
+  // Check if user has specific permission or 'all' permission
+  return permissions.includes(pageId) || permissions.includes('all');
 };
 
 // Check if user has permission for a specific route
@@ -128,12 +129,17 @@ export const getAllPermissions = () => {
 
 // Filter menu items based on user permissions
 export const filterMenuItemsByPermissions = (menuItems: any[], userPermissions: string[], userRole: string) => {
-  // Admin users see all menu items
+  // Admin users or users with 'all' permission see all menu items
   if (userRole && (
     userRole.toLowerCase() === 'admin' || 
     userRole.toLowerCase() === 'administrator' ||
     userRole.toLowerCase() === 'super admin'
   )) {
+    return menuItems;
+  }
+  
+  // Users with 'all' permission see all menu items
+  if (userPermissions.includes('all')) {
     return menuItems;
   }
   
@@ -144,7 +150,7 @@ export const filterMenuItemsByPermissions = (menuItems: any[], userPermissions: 
         id => PAGE_PERMISSIONS_MAP[id].route === item.href
       );
       
-      if (pageId && !userPermissions.includes(pageId)) {
+      if (pageId && !userPermissions.includes(pageId) && !userPermissions.includes('all')) {
         return null; // User doesn't have permission for this page
       }
     }

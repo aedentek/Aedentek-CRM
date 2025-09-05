@@ -1243,6 +1243,29 @@
   }
 }
 
+/* Certificate page specific stats grid - 3 columns full width */
+.certificate-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .certificate-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .certificate-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
 /* ============================================================================
    📊 CRM TABLE TITLE SYSTEM
    ============================================================================ */

@@ -231,3 +231,82 @@ export const PatientPhoto = ({
     </div>
   );
 };
+
+// Certificate Photo URL utility function - same as patient photos but for certificates
+export const getCertificatePhotoUrl = (photoPath: string): string => {
+  // Return empty string for null/undefined/empty paths
+  if (!photoPath || photoPath.trim() === '' || photoPath === 'null' || photoPath === null || photoPath === undefined) {
+    return '';
+  }
+  
+  // If it's already a data URL (base64), return as-is
+  if (photoPath.startsWith('data:')) {
+    return photoPath;
+  }
+  
+  // If it's already a full HTTP URL, return as-is
+  if (photoPath.startsWith('http')) {
+    return photoPath;
+  }
+  
+  // Clean the path - convert ALL backslashes to forward slashes and normalize
+  let cleanPath = photoPath.replace(/\\/g, '/'); // Convert backslashes to forward slashes
+  cleanPath = cleanPath.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+  
+  // Fix duplicated Photos/ prefix issue - if path has "Photos/Photos/", remove the duplicate
+  if (cleanPath.includes('Photos/Photos/')) {
+    console.log('⚠️ Detected duplicated Photos/ prefix in certificate path:', cleanPath);
+    cleanPath = cleanPath.replace('Photos/Photos/', 'Photos/');
+    console.log('✅ Fixed duplicated Photos/ prefix to:', cleanPath);
+  }
+  
+  // Ensure path starts with Photos/ for consistency (only if it doesn't already have it)
+  if (!cleanPath.startsWith('Photos/') && !cleanPath.startsWith('/Photos/')) {
+    // If path doesn't start with Photos/, add it
+    if (cleanPath.startsWith('/')) {
+      cleanPath = `Photos${cleanPath}`;
+    } else {
+      cleanPath = `Photos/${cleanPath}`;
+    }
+  }
+  
+  // If path already starts with Photos/, construct full URL to backend
+  if (cleanPath.startsWith('Photos/')) {
+    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000';
+    // Add aggressive cache buster to force reload with timestamp and random value
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const cacheBuster = `?t=${timestamp}&r=${random}`;
+    return `${baseUrl}/${cleanPath.replace(/\s/g, '%20')}${cacheBuster}`;
+  }
+  
+  // If path starts with /Photos/, construct full URL to backend  
+  if (cleanPath.startsWith('/Photos/')) {
+    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000';
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const cacheBuster = `?t=${timestamp}&r=${random}`;
+    return `${baseUrl}${cleanPath.replace(/\s/g, '%20')}${cacheBuster}`;
+  }
+  
+  // Handle backend file paths
+  if (cleanPath.startsWith('/uploads/')) {
+    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000';
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const cacheBuster = `?t=${timestamp}&r=${random}`;
+    return `${baseUrl}${cleanPath}${cacheBuster}`;
+  }
+  
+  // For paths that are just filenames or don't match our patterns
+  // This is a fallback - try to serve from backend
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+  
+  const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(7);
+  const cacheBuster = `?t=${timestamp}&r=${random}`;
+  return `${baseUrl}${cleanPath}${cacheBuster}`;
+};

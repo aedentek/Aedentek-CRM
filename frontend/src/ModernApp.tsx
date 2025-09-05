@@ -60,6 +60,9 @@ import LeadsList from '@/components/leads/LeadsList';
 import AddRole from '@/components/management/AddRole';
 import RoleManagement from '@/components/management/RoleManagement';
 
+// Import Simplified Certificates component
+import CertificatesSimple from '@/components/certificates/CertificatesSimple';
+
 import Administration from '@/components/Administration/Administration';
 
 import { cn } from '@/lib/utils';
@@ -222,6 +225,7 @@ function ModernApp() {
                     
                     {/* Settings */}
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/settings/certificates" element={<CertificatesSimple />} />
                     
                     {/* Administration */}
                     <Route path="/administration" element={<Administration />} />

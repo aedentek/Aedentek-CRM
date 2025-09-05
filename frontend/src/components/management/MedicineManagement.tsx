@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit2, Trash2, Pill, RefreshCw, Activity, TrendingUp, AlertTriangle, Calendar, Download, Eye, Package, BarChart3, History, X, Tag, DollarSign, Clock, Building, Warehouse, Package2, TrendingDown, UserCheck } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Pill, RefreshCw, Activity, TrendingUp, AlertTriangle, Calendar, Download, Eye, Package, BarChart3, History, X, Tag, DollarSign, Clock, Building, Warehouse, Package2, TrendingDown, UserCheck, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import usePageTitle from '@/hooks/usePageTitle';
@@ -1051,8 +1051,12 @@ const handleRefresh = React.useCallback(() => {
               ))}
               {paginatedMedicines.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                    No medicines found
+                  <TableCell colSpan={10} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900">No medicines found</h3>
+                      <p className="text-sm text-gray-500">Medicines will appear here when added</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

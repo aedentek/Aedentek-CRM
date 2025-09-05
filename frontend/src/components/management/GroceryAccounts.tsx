@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, CreditCard, TrendingUp, TrendingDown, FileText, Pencil, Eye, Trash2, RefreshCw, Activity, Calendar, Download, Package, Plus, IndianRupee, X, User, Building, ShoppingCart, Clock, Tag, Warehouse, Package2, Receipt, Banknote, ShoppingBasket, BarChart3, History } from 'lucide-react';
+import { Search, CreditCard, TrendingUp, TrendingDown, FileText, Pencil, Eye, Trash2, RefreshCw, Activity, Calendar, Download, Package, Plus, IndianRupee, X, User, Building, ShoppingCart, Clock, Tag, Warehouse, Package2, Receipt, Banknote, ShoppingBasket, BarChart3, History, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseService } from '@/services/databaseService';
 import MonthYearPickerDialog from '@/components/shared/MonthYearPickerDialog';
@@ -734,8 +734,12 @@ const GroceryAccounts: React.FC = () => {
               })}
               {paginatedAccounts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
-                    No transactions found
+                  <TableCell colSpan={13} className="text-center py-16">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900">No transactions found</h3>
+                      <p className="text-sm text-gray-500">Transactions will appear here when added</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

@@ -1244,27 +1244,30 @@ const PatientCallRecord: React.FC = () => {
           {/* Table Content */}
           {isLoadingComplete && (
             <div className="overflow-x-auto">
-              {filteredRecords.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-500">
-                    <p className="text-lg">No active patients found</p>
-                    <p className="text-sm mt-2">Check if patients are marked as active in the system</p>
-                  </div>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center">S NO</TableHead>
+                    <TableHead className="text-center">Photo</TableHead>
+                    <TableHead className="text-center">Patient Id</TableHead>
+                    <TableHead className="text-center">Patient Name</TableHead>
+                    <TableHead className="text-center">Audio</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRecords.length === 0 ? (
                     <TableRow>
-                      <TableHead className="text-center">S NO</TableHead>
-                      <TableHead className="text-center">Photo</TableHead>
-                      <TableHead className="text-center">Patient Id</TableHead>
-                      <TableHead className="text-center">Patient Name</TableHead>
-                      <TableHead className="text-center">Audio</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableCell colSpan={6} className="text-center py-16">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900">No active patients found</h3>
+                          <p className="text-sm text-gray-500">Check if patients are marked as active in the system</p>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRecords
+                  ) : (
+                    filteredRecords
                       .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                       .map((record, idx) => {
                         const patient = patients.find(p => String(p.id) === String(record.patientId));
@@ -1349,10 +1352,10 @@ const PatientCallRecord: React.FC = () => {
                             </TableCell>
                           </TableRow>
                         );
-                      })}
-                  </TableBody>
-                </Table>
-              )}
+                      })
+                  )}
+                </TableBody>
+              </Table>
             </div>
           )}
           
@@ -1883,30 +1886,31 @@ const PatientCallRecord: React.FC = () => {
                     </button>
                   </div>
                   
-                  {viewedPatientCallRecords.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Phone className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500">
-                        No call records found for this patient
-                      </p>
-                      <p className="text-sm text-slate-400 mt-1">Call records will appear here when added</p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Table Format */}
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
-                          <thead>
-                            <tr className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 text-white">
-                              <th className="px-4 py-3 text-left text-sm font-semibold">S No</th>
-                              <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
-                              <th className="px-4 py-3 text-left text-sm font-semibold">Description</th>
-                              <th className="px-4 py-3 text-center text-sm font-semibold">Audio</th>
-                              <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {viewedPatientCallRecords.map((record, index) => (
+                  {/* Table Format */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 text-white">
+                          <th className="px-4 py-3 text-left text-sm font-semibold">S No</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Description</th>
+                          <th className="px-4 py-3 text-center text-sm font-semibold">Audio</th>
+                          <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {viewedPatientCallRecords.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-16">
+                              <div className="flex flex-col items-center justify-center space-y-3">
+                                <Phone className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-gray-900">No call records found</h3>
+                                <p className="text-sm text-gray-500">Call records will appear here when added</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          viewedPatientCallRecords.map((record, index) => (
                               <tr key={record.id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-4 py-3 text-sm text-gray-900">
                                   {index + 1}
@@ -2004,12 +2008,11 @@ const PatientCallRecord: React.FC = () => {
                                   </button>
                                 </td>
                               </tr>
-                            ))}
+                            ))
+                        )}
                           </tbody>
                         </table>
                       </div>
-                    </>
-                  )}
                 </div>
 
               </div>
