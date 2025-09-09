@@ -416,8 +416,25 @@ const PatientHistory: React.FC = () => {
         name: d.name
       }));
       setDoctors(mappedDoctors);
+      
+      // Show success message if we have doctors
+      if (mappedDoctors.length > 0) {
+        console.log(`✅ Successfully loaded ${mappedDoctors.length} doctors`);
+      } else {
+        // No doctors found, but API call was successful
+        console.log('⚠️ No doctors found in database');
+        toast({
+          title: "No Doctors Found",
+          description: "No doctors are available in the system. Please add doctors first.",
+          variant: "default",
+        });
+      }
     } catch (error) {
       console.error('Error loading doctors:', error);
+      
+      // Provide more specific error information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log('Doctor loading error details:', errorMessage);
       
       // Fallback: Try to load from localStorage as backup
       const stored = localStorage.getItem('doctors');
@@ -444,7 +461,7 @@ const PatientHistory: React.FC = () => {
       
       toast({
         title: "Warning",
-        description: "Failed to load doctors from database. No doctors available.",
+        description: `Failed to load doctors: ${errorMessage}. Please check your connection or contact support.`,
         variant: "destructive",
       });
     } finally {

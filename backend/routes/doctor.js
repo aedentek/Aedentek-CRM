@@ -308,9 +308,82 @@ router.delete('/doctor-categories/:id', async (req, res) => {
 // Get all doctors (excluding deleted)
 router.get('/doctors', async (req, res) => {
   try {
+    console.log('📋 GET /doctors requested');
+    
+    // First check if table exists
+    try {
+      const [tableCheck] = await db.query("SHOW TABLES LIKE 'doctors'");
+      if (tableCheck.length === 0) {
+        console.log('❌ Doctors table does not exist');
+        return res.status(500).json({ error: 'Doctors table does not exist in database' });
+      }
+    } catch (tableError) {
+      console.error('❌ Error checking doctors table:', tableError);
+      return res.status(500).json({ error: 'Database table check failed' });
+    }
+    
     const [rows] = await db.query('SELECT * FROM doctors WHERE deleted_at IS NULL ORDER BY created_at DESC');
+    console.log(`✅ Found ${rows.length} active doctors`);
+    
+    if (rows.length === 0) {
+      console.log('⚠️ No active doctors found in database');
+      // Also check total count including deleted
+      try {
+        const [totalCount] = await db.query('SELECT COUNT(*) as total FROM doctors');
+        console.log(`📊 Total doctors in database (including deleted): ${totalCount[0].total}`);
+      } catch (countError) {
+        console.error('Error getting total doctors count:', countError);
+      }
+    }
+    
     res.json(rows);
   } catch (err) {
+    console.error('❌ Error in GET /doctors:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Debug endpoint to check doctors table status
+router.get('/doctors/debug', async (req, res) => {
+  try {
+    console.log('🔍 Debug endpoint called for doctors table');
+    
+    // Check if table exists
+    const [tableCheck] = await db.query("SHOW TABLES LIKE 'doctors'");
+    const tableExists = tableCheck.length > 0;
+    
+    let tableInfo = null;
+    let totalCount = 0;
+    let activeCount = 0;
+    let deletedCount = 0;
+    
+    if (tableExists) {
+      // Get table structure
+      const [structure] = await db.query('DESCRIBE doctors');
+      tableInfo = structure;
+      
+      // Get counts
+      const [total] = await db.query('SELECT COUNT(*) as count FROM doctors');
+      totalCount = total[0].count;
+      
+      const [active] = await db.query('SELECT COUNT(*) as count FROM doctors WHERE deleted_at IS NULL');
+      activeCount = active[0].count;
+      
+      const [deleted] = await db.query('SELECT COUNT(*) as count FROM doctors WHERE deleted_at IS NOT NULL');
+      deletedCount = deleted[0].count;
+    }
+    
+    res.json({
+      tableExists,
+      tableInfo,
+      counts: {
+        total: totalCount,
+        active: activeCount,
+        deleted: deletedCount
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error in doctors debug endpoint:', err);
     res.status(500).json({ error: err.message });
   }
 });
