@@ -178,7 +178,7 @@ export class DatabaseService {
 
   // === PATIENT ATTENDANCE ===
   static async getAllPatientAttendance() {
-    const res = await fetch(`${this.apiBaseUrl}/patient-attendance`);
+    const res = await fetch(`${this.apiBaseUrl}/patient-attendance?all=true`);
     if (!res.ok) throw new Error('Failed to fetch patient attendance');
     return res.json();
   }

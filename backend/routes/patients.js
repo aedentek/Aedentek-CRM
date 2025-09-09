@@ -288,15 +288,40 @@ router.post('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- PATIENT ATTENDANCE CRUD ENDPOINTS ---
 
-// GET /api/patient-attendance - Get all active patients with their attendance status for today
+// GET /api/patient-attendance - Get patient attendance records
 router.get('/patient-attendance', async (req, res) => {
   console.log('📊 GET /patient-attendance requested');
   try {
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-    console.log('📅 Fetching attendance for date:', today);
+    const { date, all } = req.query;
     
-    // Query to get ALL active patients with their attendance status for today
-    // If no attendance record exists for today, show as "Not Marked"
+    if (all === 'true') {
+      // Return all attendance records (what the frontend expects)
+      console.log('📅 Fetching all attendance records');
+      const [rows] = await db.query(`
+        SELECT 
+          pa.id,
+          pa.patient_id,
+          pa.patient_name,
+          pa.date,
+          pa.status,
+          pa.check_in_time,
+          pa.notes,
+          pa.created_at,
+          pa.updated_at
+        FROM patient_attendance pa 
+        ORDER BY pa.date DESC, pa.patient_name ASC
+      `);
+      console.log(`✅ Found ${rows.length} total attendance records`);
+      res.json(rows);
+      return;
+    }
+    
+    // Default behavior: get today's attendance with patient info
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    console.log('📅 Fetching attendance for date:', targetDate);
+    
+    // Query to get ALL active patients with their attendance status for the target date
+    // If no attendance record exists for the date, show as "Not Marked"
     const query = `
       SELECT 
         p.id as patient_id,
@@ -304,21 +329,21 @@ router.get('/patient-attendance', async (req, res) => {
         p.phone as patient_phone,
         p.photo as patient_image,
         COALESCE(pa.id, NULL) as attendance_id,
-        '${today}' as date,
+        '${targetDate}' as date,
         COALESCE(pa.status, 'Not Marked') as status,
         COALESCE(TIME_FORMAT(pa.check_in_time, '%H:%i'), '') as check_in_time,
         COALESCE(pa.notes, '') as notes,
         pa.created_at,
         pa.updated_at
       FROM patients p
-      LEFT JOIN patient_attendance pa ON p.id = pa.patient_id AND DATE(pa.date) = '${today}'
+      LEFT JOIN patient_attendance pa ON p.id = pa.patient_id AND DATE(pa.date) = '${targetDate}'
       WHERE p.status = 'Active'
       ORDER BY p.name ASC
     `;
     
     const [rows] = await db.query(query);
     
-    console.log(`✅ Found ${rows.length} active patients with attendance status for ${today}`);
+    console.log(`✅ Found ${rows.length} active patients with attendance status for ${targetDate}`);
     res.json(rows);
   } catch (error) {
     console.error('❌ Error fetching patient attendance:', error);
@@ -1225,16 +1250,6 @@ router.delete('/patient-attendance/patient/:patientId', async (req, res) => {
 });
 
 // --- PATIENT ATTENDANCE CRUD ENDPOINTS ---
-
-// Get all patient attendance records
-router.get('/patient-attendance', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM patient_attendance ORDER BY date DESC, patient_name ASC');
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Get patient attendance records for a specific patient
 router.get('/patient-attendance/patient/:patientId', async (req, res) => {

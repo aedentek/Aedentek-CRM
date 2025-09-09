@@ -84,7 +84,7 @@ class PatientAttendanceAPI {
   // Get all attendance records
   static async getAllAttendance(): Promise<AttendanceRecord[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/patient-attendance`);
+      const response = await fetch(`${API_BASE_URL}/patient-attendance?all=true`);
       if (!response.ok) throw new Error('Failed to fetch attendance records');
       const data = await response.json();
       

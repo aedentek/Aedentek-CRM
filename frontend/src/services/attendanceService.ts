@@ -71,7 +71,7 @@ export class AttendanceService {
   }
 
   static async getAllAttendance(): Promise<AttendanceRecord[]> {
-    const response = await fetch(`${this.API_URL}/patient-attendance`);
+    const response = await fetch(`${this.API_URL}/patient-attendance?all=true`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch attendance records');
