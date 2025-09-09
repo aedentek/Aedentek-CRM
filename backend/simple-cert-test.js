@@ -8,10 +8,10 @@ async function testCertificates() {
     
     // Create a single connection
     connection = await mysql.createConnection({
-      host: 'srv1639.hstgr.io',
-      user: 'u745362362_crmusername',
-      password: 'Aedentek@123#',
-      database: 'u745362362_crm',
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       ssl: {
         rejectUnauthorized: false
       }

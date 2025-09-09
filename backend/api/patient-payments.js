@@ -5,6 +5,8 @@ const router = express.Router();
 
 console.log('🏥 Patient Payments routes module loaded!');
 
+// Debug middleware disabled for testing
+
 // 🧪 DEBUG endpoint to test carry forward query
 router.get('/patient-payments/debug-carry-forward/:patientId/:month/:year', async (req, res) => {
   try {
@@ -565,6 +567,17 @@ router.get('/patient-payments/all', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// Test DELETE route to verify routing works
+router.delete('/patient-payments/test-delete/:id', (req, res) => {
+  console.log(`🧪 TEST DELETE ROUTE CALLED with ID: ${req.params.id}`);
+  res.json({ 
+    success: true,
+    message: 'Test DELETE route works',
+    id: req.params.id,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Get payment history for a specific patient
@@ -1164,6 +1177,45 @@ router.get('/carry-forward/:month/:year', async (req, res) => {
       message: 'Failed to fetch carry forward information',
       error: error.message
     });
+  }
+});
+
+// TEST endpoint to verify routes are working
+router.get('/patient-payments/test-delete', (req, res) => {
+  console.log('🧪 TEST: Delete route testing endpoint called');
+  res.json({ success: true, message: 'Delete route test successful' });
+});
+
+// DELETE patient payment record - MOVED TO END to avoid conflicts with specific routes  
+router.delete('/patient-payments/:id', async (req, res) => {
+  console.log(`�️ DELETE HANDLER REACHED! Request URL: ${req.originalUrl}`);
+  console.log(`�️ Route path matched: /patient-payments/:id`);
+  console.log(`🗑️ Request params:`, req.params);
+  console.log(`🗑️ Request method: ${req.method}`);
+  
+  const { id } = req.params;
+  
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Payment ID is required' });
+  }
+
+  try {
+    const query = 'DELETE FROM patient_payment_history WHERE id = ?';
+    console.log(`🗑️ Executing DELETE query for payment ID: ${id}`);
+    
+    const [result] = await db.execute(query, [id]);
+    
+    if (result.affectedRows === 0) {
+      console.log(`⚠️ No payment found with ID: ${id}`);
+      return res.status(404).json({ success: false, message: 'Payment record not found' });
+    }
+    
+    console.log(`✅ Successfully deleted payment with ID: ${id}`);
+    res.json({ success: true, message: 'Payment record deleted successfully' });
+    
+  } catch (error) {
+    console.error('❌ Error deleting payment record:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 

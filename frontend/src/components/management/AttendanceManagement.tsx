@@ -46,11 +46,11 @@ const AttendanceManagement: React.FC = () => {
     
     // If it's a file path, use proxy for image processing
     if (photo.startsWith('/') || photo.startsWith('http')) {
-      return `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000'}${photo.startsWith('/') ? '' : '/'}${photo}`;
+      return `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '')}${photo.startsWith('/') ? '' : '/'}${photo}`;
     }
     
     // Default proxy path
-    return `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000'}/${photo}`;
+    return `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '')}/${photo}`;
   };
 
   const [currentPage, setCurrentPage] = useState(1);

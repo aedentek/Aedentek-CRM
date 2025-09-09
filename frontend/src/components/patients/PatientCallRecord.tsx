@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { DatabaseService } from '../../services/databaseService';
 import CallRecordService from '../../services/callRecordService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -187,7 +187,7 @@ const PatientCallRecord: React.FC = () => {
   // Auto-set patient ID when viewing patient details
   useEffect(() => {
     if (viewRecord && viewRecord.patientId) {
-      console.log('🎯 Auto-setting patient ID for view dialog:', viewRecord.patientId);
+      console.log('?? Auto-setting patient ID for view dialog:', viewRecord.patientId);
       setFormData(prev => ({ ...prev, patientId: String(viewRecord.patientId) }));
     }
   }, [viewRecord]);
@@ -464,7 +464,7 @@ const PatientCallRecord: React.FC = () => {
       
       // Convert database format to component format
       const mappedCallRecords = (callRecordsData && Array.isArray(callRecordsData) ? callRecordsData : []).map((record: any) => {
-        console.log('🎵 Processing call record:', record.id, 'audio_file_path:', record.audio_file_path, 'audio_file_name:', record.audio_file_name);
+        console.log('?? Processing call record:', record.id, 'audio_file_path:', record.audio_file_path, 'audio_file_name:', record.audio_file_name);
         
         let audioUrl = '';
         if (record.audio_file_path) {
@@ -476,7 +476,7 @@ const PatientCallRecord: React.FC = () => {
           audioUrl = getFileUrl(fallbackPath);
         }
         
-        console.log('🔗 Constructed audio URL:', audioUrl);
+        console.log('?? Constructed audio URL:', audioUrl);
         
         return {
           id: record.id,
@@ -659,10 +659,10 @@ const PatientCallRecord: React.FC = () => {
   };
 
   const playAudio = (audioUrl: string, recordId: string) => {
-    console.log('🎵 Attempting to play audio:', audioUrl);
+    console.log('?? Attempting to play audio:', audioUrl);
     
     if (!audioUrl) {
-      console.error('❌ No audio URL provided');
+      console.error('? No audio URL provided');
       toast({
         title: "Audio Error",
         description: "No audio file available for this record.",
@@ -683,7 +683,7 @@ const PatientCallRecord: React.FC = () => {
       
       // Add error handling
       audioRef.current.onerror = (error) => {
-        console.error('❌ Audio playback error:', error);
+        console.error('? Audio playback error:', error);
         toast({
           title: "Audio Error",
           description: "Failed to load or play the audio file. The file may not exist or be corrupted.",
@@ -693,21 +693,21 @@ const PatientCallRecord: React.FC = () => {
       };
       
       audioRef.current.onloadstart = () => {
-        console.log('🔄 Loading audio...');
+        console.log('?? Loading audio...');
       };
       
       audioRef.current.oncanplay = () => {
-        console.log('✅ Audio loaded successfully');
+        console.log('? Audio loaded successfully');
       };
       
       audioRef.current.playbackRate = playbackSpeed;
       
       // Try to play
       audioRef.current.play().then(() => {
-        console.log('✅ Audio playing successfully');
+        console.log('? Audio playing successfully');
         setPlayingAudio(recordId);
       }).catch((error) => {
-        console.error('❌ Audio play failed:', error);
+        console.error('? Audio play failed:', error);
         toast({
           title: "Audio Error",
           description: "Failed to play the audio file. Please check if the file exists.",
@@ -730,10 +730,10 @@ const PatientCallRecord: React.FC = () => {
   };
 
   const downloadAudio = (audioUrl: string, filename: string) => {
-    console.log('📥 Attempting to download audio:', audioUrl);
+    console.log('?? Attempting to download audio:', audioUrl);
     
     if (!audioUrl) {
-      console.error('❌ No audio URL provided for download');
+      console.error('? No audio URL provided for download');
       toast({
         title: "Download Error",
         description: "No audio file available for download.",
@@ -767,7 +767,7 @@ const PatientCallRecord: React.FC = () => {
           // Clean up blob URL
           window.URL.revokeObjectURL(blobUrl);
           
-          console.log('✅ Download completed successfully');
+          console.log('? Download completed successfully');
           toast({
             title: "Download Started",
             description: "Audio file download has been initiated.",
@@ -775,7 +775,7 @@ const PatientCallRecord: React.FC = () => {
           });
         })
         .catch(error => {
-          console.error('❌ Download failed:', error);
+          console.error('? Download failed:', error);
           toast({
             title: "Download Error", 
             description: "The audio file could not be downloaded. It may have been moved or deleted.",
@@ -784,7 +784,7 @@ const PatientCallRecord: React.FC = () => {
         });
         
     } catch (error) {
-      console.error('❌ Download error:', error);
+      console.error('? Download error:', error);
       toast({
         title: "Download Error",
         description: "Failed to download the audio file.",
@@ -809,13 +809,13 @@ const PatientCallRecord: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    console.log('🚀 Add Record button clicked');
-    console.log('📝 Form Data:', formData);
-    console.log('👤 Selected Patient ID:', selectedPatientId);
-    console.log('🎵 Audio Recording:', audioRecording);
+    console.log('?? Add Record button clicked');
+    console.log('?? Form Data:', formData);
+    console.log('?? Selected Patient ID:', selectedPatientId);
+    console.log('?? Audio Recording:', audioRecording);
     
     if (!formData.patientId || !formData.date) {
-      console.log('❌ Validation failed - missing required fields');
+      console.log('? Validation failed - missing required fields');
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields (Patient and Date).",
@@ -855,9 +855,9 @@ const PatientCallRecord: React.FC = () => {
           // Create file from blob and upload to server
           const audioFile = new File([audioRecording.blob], audioFileName, { type: 'audio/wav' });
           audioFilePath = await uploadCallRecordAudio(audioFile, formData.patientId);
-          console.log('âœ… Recorded audio uploaded:', audioFilePath);
+          console.log('✅ Recorded audio uploaded:', audioFilePath);
         } catch (error) {
-          console.error('âŒ Audio upload error:', error);
+          console.error('❌ Audio upload error:', error);
           throw error;
         }
       }
@@ -869,9 +869,9 @@ const PatientCallRecord: React.FC = () => {
           audioFilePath = await uploadCallRecordAudio(firstAudioFile, formData.patientId);
           audioFileName = firstAudioFile.name;
           audioDuration = 0; // Duration will be calculated later if needed
-          console.log('âœ… Audio file uploaded:', audioFilePath);
+          console.log('✅ Audio file uploaded:', audioFilePath);
         } catch (error) {
-          console.error('âŒ Audio file upload failed:', error);
+          console.error('❌ Audio file upload failed:', error);
           throw error;
         }
       }
@@ -888,18 +888,18 @@ const PatientCallRecord: React.FC = () => {
         audio_duration: audioDuration
       };
 
-      console.log('💾 About to save DB record:', dbRecord);
+      console.log('?? About to save DB record:', dbRecord);
 
       // Send JSON data directly (not FormData)
       if (isEditing) {
-        console.log('🔄 Updating existing record...');
+        console.log('?? Updating existing record...');
         await CallRecordService.updatePatientCallRecord(recordId, dbRecord);
         toast({
           title: "Record Updated",
           description: "Call record has been successfully updated.",
         });
       } else {
-        console.log('➕ Adding new record...');
+        console.log('? Adding new record...');
         await CallRecordService.addPatientCallRecord(dbRecord);
         toast({
           title: "Record Added",
@@ -907,7 +907,7 @@ const PatientCallRecord: React.FC = () => {
         });
       }
 
-      console.log('✅ Record saved successfully!');
+      console.log('? Record saved successfully!');
 
       setIsUpdatingRecords(true);
       await loadCallRecords();
@@ -1022,7 +1022,7 @@ const PatientCallRecord: React.FC = () => {
           
           <div className="flex items-center gap-2 sm:gap-3">
             <ActionButtons.Refresh onClick={() => {
-              console.log('🔄 Manual refresh triggered - fetching patient call records');
+              console.log('?? Manual refresh triggered - fetching patient call records');
               setIsLoadingPatients(true);
               setIsLoadingRecords(true);
               Promise.all([loadPatients(), loadCallRecords()]).finally(() => {
@@ -1038,7 +1038,7 @@ const PatientCallRecord: React.FC = () => {
             
             <Button 
               onClick={() => {
-                console.log('🔵 Add Record button clicked');
+                console.log('?? Add Record button clicked');
                 setShowAddDialog(true);
               }}
               className="global-btn global-btn-primary flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2"
@@ -1587,7 +1587,7 @@ const PatientCallRecord: React.FC = () => {
                               alt={`${viewRecord.patientName}'s photo`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                console.log('❌ Image failed for:', viewRecord.patientName);
+                                console.log('? Image failed for:', viewRecord.patientName);
                                 console.log('   Failed URL:', imageUrl);
                                 
                                 // Show fallback avatar
@@ -1599,7 +1599,7 @@ const PatientCallRecord: React.FC = () => {
                                 }
                               }}
                               onLoad={() => {
-                                console.log('✅ Image loaded successfully for patient:', viewRecord.patientName, 'URL:', imageUrl);
+                                console.log('? Image loaded successfully for patient:', viewRecord.patientName, 'URL:', imageUrl);
                               }}
                             />
                           </>
@@ -1936,11 +1936,11 @@ const PatientCallRecord: React.FC = () => {
                                         variant="ghost"
                                         onClick={() => {
                                           const audioUrl = record.audioRecording?.url;
-                                          console.log('🎵 Play button clicked, URL:', audioUrl);
+                                          console.log('?? Play button clicked, URL:', audioUrl);
                                           if (audioUrl) {
                                             playAudio(audioUrl, record.id);
                                           } else {
-                                            console.error('❌ No audio URL available');
+                                            console.error('? No audio URL available');
                                             toast({
                                               title: "Audio Error",
                                               description: "No audio file available for this record.",
@@ -1981,11 +1981,11 @@ const PatientCallRecord: React.FC = () => {
                                         variant="ghost"
                                         onClick={() => {
                                           const audioUrl = record.audioRecording?.url;
-                                          console.log('📥 Download button clicked, URL:', audioUrl);
+                                          console.log('?? Download button clicked, URL:', audioUrl);
                                           if (audioUrl) {
                                             downloadAudio(audioUrl, `${record.patientName}-audio-${record.date}`);
                                           } else {
-                                            console.error('❌ No audio URL available for download');
+                                            console.error('? No audio URL available for download');
                                             toast({
                                               title: "Download Error",
                                               description: "No audio file available for download.",
@@ -2140,11 +2140,11 @@ const PatientCallRecord: React.FC = () => {
               
               <div className="mt-3 p-3 bg-red-50 rounded border border-red-200">
                 <div className="text-sm text-red-800">
-                  <p className="font-medium mb-2">⚠️ This will permanently delete:</p>
+                  <p className="font-medium mb-2">?? This will permanently delete:</p>
                   <ul className="text-xs space-y-1">
-                    <li>• Call record details and description</li>
-                    <li>• Associated audio recordings</li>
-                    <li>• All related metadata</li>
+                    <li>� Call record details and description</li>
+                    <li>� Associated audio recordings</li>
+                    <li>� All related metadata</li>
                   </ul>
                 </div>
               </div>

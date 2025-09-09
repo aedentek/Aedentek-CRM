@@ -57,7 +57,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
       console.log('🔍 Sending OTP request for:', email);
       
       // Send OTP request to backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/send-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -100,7 +100,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
       console.log('🔍 Verifying OTP:', { email, otp });
       
       // Verify OTP with backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/verify-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -163,7 +163,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
       }
 
       // Update password in database
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/management-users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -22,7 +22,7 @@ class FaviconService {
   private cacheExpiry: number;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    this.baseURL = import.meta.env.VITE_API_URL;
     this.cache = new Map<string, FaviconCacheEntry>();
     this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
   }

@@ -97,8 +97,17 @@ React.useEffect(() => {
       })));
       
       // Set active categories, suppliers, and doctors
-      setCategories(categoriesData.filter((cat: any) => cat.status === 'active'));
-      setSuppliers(suppliersData.filter((sup: any) => sup.status === 'active'));
+      console.log('📋 Raw categories data:', categoriesData);
+      console.log('👥 Raw suppliers data:', suppliersData);
+      
+      const activeCategories = categoriesData.filter((cat: any) => cat.status === 'active');
+      const activeSuppliers = suppliersData.filter((sup: any) => sup.status === 'active');
+      
+      console.log('✅ Active categories:', activeCategories);
+      console.log('✅ Active suppliers:', activeSuppliers);
+      
+      setCategories(activeCategories);
+      setSuppliers(activeSuppliers);
       setDoctors(doctorsData || []);
     } catch (e) {
       // Optionally show error
@@ -143,6 +152,7 @@ const handleRefresh = React.useCallback(() => {
     supplier: '',
     batch_number: '',
     expiry_date: '',
+    purchase_date: '',
     quantity: 0,
     price: 0,
     status: 'active',
@@ -353,6 +363,32 @@ const handleRefresh = React.useCallback(() => {
       const purchaseDate = medicine.purchase_date || medicine.createdAt || '';
       let expiryDate = medicine.expiry_date || '';
       
+      // Format purchase date for HTML date input (YYYY-MM-DD)
+      let formattedPurchaseDate = '';
+      if (purchaseDate) {
+        try {
+          // If it's already in YYYY-MM-DD format, keep it
+          if (/^\d{4}-\d{2}-\d{2}$/.test(purchaseDate)) {
+            formattedPurchaseDate = purchaseDate;
+            console.log('Purchase date already in correct format:', purchaseDate);
+          } else {
+            // Try to parse different date formats
+            const dateObj = new Date(purchaseDate);
+            if (dateObj && !isNaN(dateObj.getTime())) {
+              // Convert to YYYY-MM-DD format for HTML date input
+              formattedPurchaseDate = dateObj.toISOString().split('T')[0];
+              console.log('Converted purchase date to:', formattedPurchaseDate);
+            } else {
+              console.log('Could not parse purchase date:', purchaseDate);
+              formattedPurchaseDate = ''; // Reset if can't parse
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing purchase date:', error);
+          formattedPurchaseDate = ''; // Reset on error
+        }
+      }
+      
       // Format expiry date for HTML date input (YYYY-MM-DD)
       if (expiryDate) {
         try {
@@ -403,6 +439,7 @@ const handleRefresh = React.useCallback(() => {
         supplier: selectedSupplier,
         batch_number: medicine.batch_number || '',
         expiry_date: expiryDate,
+        purchase_date: formattedPurchaseDate,
         quantity: medicine.quantity || 0,
         price: medicine.price || 0,
         status: medicine.status || 'active',
@@ -410,6 +447,8 @@ const handleRefresh = React.useCallback(() => {
       };
       
       console.log('Setting form data:', newFormData);
+      console.log('Available categories:', categories);
+      console.log('Available suppliers:', suppliers);
       
       setEditingMedicine(medicine);
       setFormData(newFormData);
@@ -445,40 +484,88 @@ const handleRefresh = React.useCallback(() => {
       return;
     }
     
+    // Debug log to check form data
+    console.log('🔍 Form data before submission:', {
+      ...formData,
+      purchase_date: formData.purchase_date,
+      expiry_date: formData.expiry_date
+    });
+    
     try {
       const db = (await import('@/services/databaseService')).DatabaseService;
       
       if (editingMedicine) {
-        await db.updateMedicineProduct(editingMedicine.id, {
+        const updateData = {
           name: formData.name,
           category: formData.category,
           manufacturer: formData.manufacturer,
           supplier: formData.supplier,
           batch_number: formData.batch_number,
           expiry_date: formData.expiry_date,
+          purchase_date: formData.purchase_date,
           quantity: formData.quantity,
           price: formData.price,
           status: formData.status,
           description: formData.description,
-        });
+        };
+        
+        console.log('🔍 Update data being sent to API:', updateData);
+        console.log('🔍 Medicine ID:', editingMedicine.id);
+        
+        const result = await db.updateMedicineProduct(editingMedicine.id, updateData);
+        console.log('✅ Update result:', result);
+        
+        // ⚡ INSTANT UPDATE: Update the medicines state immediately
+        setMedicines(prevMedicines => 
+          prevMedicines.map(medicine => 
+            medicine.id === editingMedicine.id 
+              ? {
+                  ...medicine,
+                  ...updateData,
+                  id: medicine.id, // Keep original ID
+                  createdAt: medicine.createdAt, // Keep original creation date
+                  created_at: medicine.created_at, // Keep original creation date
+                  status: updateData.status as "active" | "inactive" // Ensure proper type
+                } as Medicine
+              : medicine
+          )
+        );
+        
         toast({ title: "Success", description: "Medicine updated successfully" });
       } else {
-        await db.addMedicineProduct({
+        const newMedicine = await db.addMedicineProduct({
           name: formData.name,
           category: formData.category,
           manufacturer: formData.manufacturer,
           supplier: formData.supplier,
           batch_number: formData.batch_number,
           expiry_date: formData.expiry_date,
+          purchase_date: formData.purchase_date,
           quantity: formData.quantity,
           price: formData.price,
           status: formData.status,
           description: formData.description,
         });
+        
+        // ⚡ INSTANT UPDATE: Add new medicine to the list immediately
+        setMedicines(prevMedicines => [
+          {
+            ...newMedicine,
+            id: newMedicine.id.toString(),
+            createdAt: newMedicine.created_at || newMedicine.createdAt || new Date().toISOString(),
+            price: newMedicine.price || 0,
+            quantity: newMedicine.quantity || 0,
+            current_stock: newMedicine.current_stock || newMedicine.quantity || 0,
+            used_stock: newMedicine.used_stock || 0,
+          },
+          ...prevMedicines
+        ]);
+        
         toast({ title: "Success", description: "Medicine added successfully" });
       }
       
-      handleRefresh();
+      // No need for delayed refresh - data is already updated instantly!
+      // setRefreshKey(prev => prev + 1);
       
       setFormData({
         name: '',
@@ -487,6 +574,7 @@ const handleRefresh = React.useCallback(() => {
         supplier: '',
         batch_number: '',
         expiry_date: '',
+        purchase_date: '',
         quantity: 0,
         price: 0,
         status: 'active',
@@ -507,7 +595,10 @@ const handleRefresh = React.useCallback(() => {
       const db = (await import('@/services/databaseService')).DatabaseService;
       await db.deleteMedicineProduct(medicineToDelete.id);
       
-      handleRefresh();
+      // ⚡ INSTANT DELETE: Remove from medicines list immediately
+      setMedicines(prevMedicines => 
+        prevMedicines.filter(medicine => medicine.id !== medicineToDelete.id)
+      );
       
       setShowDeleteDialog(false);
       setMedicineToDelete(null);
@@ -529,24 +620,21 @@ const handleRefresh = React.useCallback(() => {
   // Export CSV function
   const handleExportCSV = () => {
     try {
-      const headers = ['S No', 'Date', 'Medicine Name', 'Category', 'Manufacturer', 'Supplier', 'Batch Number', 'Expiry Date', 'Quantity', 'Price', 'Status'];
+      const headers = ['S No', 'Purchase Date', 'Medicine Name', 'Category', 'Manufacturer', 'Supplier', 'Batch Number', 'Expiry Date', 'Quantity', 'Price', 'Status'];
       
       const csvData = filteredMedicines.map((medicine, index) => {
-        const dateStr = medicine.createdAt;
-        let formattedDate = '';
+        // Use purchase_date for export with simplified formatting
+        const dateStr = medicine.purchase_date;
+        let formattedDate = 'Not specified';
         
         if (dateStr) {
-          let dateObj;
-          if (dateStr.includes('T')) {
-            dateObj = new Date(dateStr);
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            dateObj = new Date(dateStr + 'T00:00:00');
-          }
-          
-          if (dateObj && !isNaN(dateObj.getTime())) {
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const year = dateObj.getFullYear();
+          // Simple format conversion - no complex date parsing
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [year, month, day] = dateStr.split('-');
+            formattedDate = `${day}/${month}/${year}`;
+          } else if (dateStr.includes('T')) {
+            const [datePart] = dateStr.split('T');
+            const [year, month, day] = datePart.split('-');
             formattedDate = `${day}/${month}/${year}`;
           } else {
             formattedDate = dateStr;
@@ -752,7 +840,29 @@ const handleRefresh = React.useCallback(() => {
               </Button>
               
               <Button 
-                onClick={() => {
+                onClick={async () => {
+                  console.log('Add Medicine clicked');
+                  
+                  // Force reload categories and suppliers
+                  try {
+                    const db = (await import('@/services/databaseService')).DatabaseService;
+                    const [categoriesData, suppliersData] = await Promise.all([
+                      db.getAllMedicineCategories(),
+                      db.getAllMedicineSuppliers()
+                    ]);
+                    
+                    const activeCategories = categoriesData.filter((cat: any) => cat.status === 'active');
+                    const activeSuppliers = suppliersData.filter((sup: any) => sup.status === 'active');
+                    
+                    console.log('Fresh categories loaded:', activeCategories);
+                    console.log('Fresh suppliers loaded:', activeSuppliers);
+                    
+                    setCategories(activeCategories);
+                    setSuppliers(activeSuppliers);
+                  } catch (error) {
+                    console.error('Error loading categories/suppliers:', error);
+                  }
+                  
                   setFormData({
                     name: '',
                     category: '',
@@ -760,6 +870,7 @@ const handleRefresh = React.useCallback(() => {
                     supplier: '',
                     batch_number: '',
                     expiry_date: '',
+                    purchase_date: '',
                     quantity: 0,
                     price: 0,
                     status: 'active',
@@ -987,21 +1098,26 @@ const handleRefresh = React.useCallback(() => {
                   <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{(page - 1) * pageSize + idx + 1}</TableCell>
                   <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{
                     (() => {
-                      const dateStr = medicine.createdAt;
-                      if (!dateStr) return '';
-                      let dateObj;
-                      if (dateStr.includes('T')) {
-                        dateObj = new Date(dateStr);
-                      } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                        dateObj = new Date(dateStr + 'T00:00:00');
-                      } else {
-                        return dateStr;
+                      // Use purchase_date and show exact value
+                      const dateStr = medicine.purchase_date;
+                      
+                      if (!dateStr) return 'Not specified';
+                      
+                      // If it's already in YYYY-MM-DD format, convert to DD/MM/YYYY
+                      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                        const [year, month, day] = dateStr.split('-');
+                        return `${day}/${month}/${year}`;
                       }
-                      if (isNaN(dateObj.getTime())) return dateStr;
-                      const day = String(dateObj.getDate()).padStart(2, '0');
-                      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                      const year = dateObj.getFullYear();
-                      return `${day}/${month}/${year}`;
+                      
+                      // If it includes time (ISO format), extract date part
+                      if (dateStr.includes('T')) {
+                        const [datePart] = dateStr.split('T');
+                        const [year, month, day] = datePart.split('-');
+                        return `${day}/${month}/${year}`;
+                      }
+                      
+                      // Return as-is if format is unexpected
+                      return dateStr;
                     })()
                   }</TableCell>
                   <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm max-w-[200px] truncate">{medicine.name}</TableCell>
@@ -1136,8 +1252,31 @@ const handleRefresh = React.useCallback(() => {
         </Card>
 
         {/* Add/Edit Medicine Dialog */}
-        <Dialog open={isAddingMedicine} onOpenChange={setIsAddingMedicine}>
-          <DialogContent className="editpopup form crm-modal-container sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <Dialog 
+          open={isAddingMedicine || editingMedicine !== null} 
+          onOpenChange={(open) => {
+            if (!open) {
+              // Only close if not interacting with date inputs
+              const activeElement = document.activeElement as HTMLInputElement;
+              if (activeElement && activeElement.type === 'date') {
+                return;
+              }
+              setIsAddingMedicine(false);
+              setEditingMedicine(null);
+            }
+          }}
+        >
+          <DialogContent 
+            className="editpopup form crm-modal-container sm:max-w-[700px] max-h-[90vh] overflow-y-auto"
+            style={{ zIndex: 50000 }}
+            onInteractOutside={(e) => {
+              // Only prevent closing when clicking on date picker
+              const target = e.target as Element;
+              if (target?.closest('input[type="date"]') || target?.closest('[data-radix-popper-content-wrapper]')) {
+                e.preventDefault();
+              }
+            }}
+          >
             <DialogHeader className="editpopup form crm-modal-header">
               <div className="editpopup form crm-modal-header-content">
                 <div className="editpopup form crm-modal-icon">
@@ -1155,11 +1294,12 @@ const handleRefresh = React.useCallback(() => {
             </DialogHeader>
             
             <form
-              onSubmit={e => {
+              onSubmit={(e) => {
                 e.preventDefault();
                 handleSubmit();
               }}
               className="editpopup form crm-edit-form-content"
+              autoComplete="off"
             >
               <div className="editpopup form crm-edit-form-grid grid-cols-1 md:grid-cols-2">
                 <div className="editpopup form crm-edit-form-group">
@@ -1168,9 +1308,8 @@ const handleRefresh = React.useCallback(() => {
                     Medicine Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    key={`name-${editingMedicine?.id || 'new'}-${formData.name}`}
                     id="name"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Enter medicine name"
                     required
@@ -1183,19 +1322,27 @@ const handleRefresh = React.useCallback(() => {
                     Category
                   </Label>
                   <Select 
-                    key={`category-${editingMedicine?.id || 'new'}-${formData.category}`} 
-                    value={formData.category} 
+                    value={formData.category || ''} 
                     onValueChange={(value) => setFormData({...formData, category: value})}
                   >
-                    <SelectTrigger className="editpopup form crm-edit-form-select">
+                    <SelectTrigger className="editpopup form crm-edit-form-select" style={{ position: 'relative', zIndex: 10000 }}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
+                    <SelectContent style={{ zIndex: 99999, position: 'relative' }}>
+                      {categories.length === 0 ? (
+                        <SelectItem value="no-categories" disabled>
+                          No categories found - Check console
                         </SelectItem>
-                      ))}
+                      ) : (
+                        categories.map(category => {
+                          console.log('Rendering category:', category);
+                          return (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          );
+                        })
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1205,9 +1352,8 @@ const handleRefresh = React.useCallback(() => {
                     Manufacturer
                   </Label>
                   <Input
-                    key={`manufacturer-${editingMedicine?.id || 'new'}-${formData.manufacturer}`}
                     id="manufacturer"
-                    value={formData.manufacturer}
+                    value={formData.manufacturer || ''}
                     onChange={(e) => setFormData({...formData, manufacturer: e.target.value})}
                     placeholder="Enter manufacturer"
                     className="editpopup form crm-edit-form-input"
@@ -1219,19 +1365,27 @@ const handleRefresh = React.useCallback(() => {
                     Supplier <span className="text-red-500">*</span>
                   </Label>
                   <Select 
-                    key={`supplier-${editingMedicine?.id || 'new'}-${formData.supplier}`} 
-                    value={formData.supplier} 
+                    value={formData.supplier || ''} 
                     onValueChange={(value) => setFormData({...formData, supplier: value})}
                   >
-                    <SelectTrigger className="editpopup form crm-edit-form-select">
+                    <SelectTrigger className="editpopup form crm-edit-form-select" style={{ position: 'relative', zIndex: 10000 }}>
                       <SelectValue placeholder="Select supplier" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map(supplier => (
-                        <SelectItem key={supplier.id} value={supplier.name}>
-                          {supplier.name}
+                    <SelectContent style={{ zIndex: 99999, position: 'relative' }}>
+                      {suppliers.length === 0 ? (
+                        <SelectItem value="no-suppliers" disabled>
+                          No suppliers found - Check console
                         </SelectItem>
-                      ))}
+                      ) : (
+                        suppliers.map(supplier => {
+                          console.log('Rendering supplier:', supplier);
+                          return (
+                            <SelectItem key={supplier.id} value={supplier.name}>
+                              {supplier.name}
+                            </SelectItem>
+                          );
+                        })
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1241,9 +1395,8 @@ const handleRefresh = React.useCallback(() => {
                     Batch Number
                   </Label>
                   <Input
-                    key={`batch-number-${editingMedicine?.id || 'new'}-${formData.batch_number}`}
                     id="batch_number"
-                    value={formData.batch_number}
+                    value={formData.batch_number || ''}
                     onChange={(e) => setFormData({...formData, batch_number: e.target.value})}
                     placeholder="Enter batch number"
                     className="editpopup form crm-edit-form-input"
@@ -1255,11 +1408,27 @@ const handleRefresh = React.useCallback(() => {
                     Expiry Date
                   </Label>
                   <Input
-                    key={`expiry-date-${editingMedicine?.id || 'new'}-${formData.expiry_date}`}
                     id="expiry_date"
                     type="date"
-                    value={formData.expiry_date}
+                    value={formData.expiry_date || ''}
                     onChange={(e) => setFormData({...formData, expiry_date: e.target.value})}
+                    className="editpopup form crm-edit-form-input"
+                  />
+                </div>
+                <div className="editpopup form crm-edit-form-group">
+                  <Label htmlFor="purchase_date" className="editpopup form crm-edit-form-label flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Purchase Date
+                  </Label>
+                  <Input
+                    id="purchase_date"
+                    type="date"
+                    value={formData.purchase_date || ''}
+                    onChange={(e) => {
+                      console.log('📅 Purchase date changed to:', e.target.value);
+                      setFormData({...formData, purchase_date: e.target.value});
+                    }}
+                    placeholder="Select purchase date"
                     className="editpopup form crm-edit-form-input"
                   />
                 </div>
@@ -1269,11 +1438,10 @@ const handleRefresh = React.useCallback(() => {
                     Quantity <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    key={`quantity-${editingMedicine?.id || 'new'}-${formData.quantity}`}
                     id="quantity"
                     type="number"
                     min="0"
-                    value={formData.quantity}
+                    value={formData.quantity || ''}
                     onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
                     placeholder="Enter quantity"
                     required
@@ -1282,16 +1450,15 @@ const handleRefresh = React.useCallback(() => {
                 </div>
                 <div className="editpopup form crm-edit-form-group">
                   <Label htmlFor="price" className="editpopup form crm-edit-form-label flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
+                    <span className="text-green-600">₹</span>
                     Price <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    key={`price-${editingMedicine?.id || 'new'}-${formData.price}`}
                     id="price"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={formData.price}
+                    value={formData.price || ''}
                     onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                     placeholder="Enter price"
                     required
@@ -1304,14 +1471,13 @@ const handleRefresh = React.useCallback(() => {
                     Status
                   </Label>
                   <Select 
-                    key={`status-${editingMedicine?.id || 'new'}-${formData.status}`} 
-                    value={formData.status} 
+                    value={formData.status || 'active'} 
                     onValueChange={(value) => setFormData({...formData, status: value})}
                   >
-                    <SelectTrigger className="editpopup form crm-edit-form-select">
+                    <SelectTrigger className="editpopup form crm-edit-form-select" style={{ position: 'relative', zIndex: 10000 }}>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent style={{ zIndex: 99999, position: 'relative' }}>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
@@ -1323,9 +1489,8 @@ const handleRefresh = React.useCallback(() => {
                     Description
                   </Label>
                   <Textarea
-                    key={`description-${editingMedicine?.id || 'new'}-${formData.description.slice(0, 10)}`}
                     id="description"
-                    value={formData.description}
+                    value={formData.description || ''}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     placeholder="Enter description (optional)"
                     rows={3}
@@ -1348,6 +1513,7 @@ const handleRefresh = React.useCallback(() => {
                       supplier: '',
                       batch_number: '',
                       expiry_date: '',
+                      purchase_date: '',
                       quantity: 0,
                       price: 0,
                       status: 'active',

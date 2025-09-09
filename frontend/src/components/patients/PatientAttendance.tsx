@@ -21,7 +21,8 @@ import '../../styles/modern-forms.css';
 import '../../styles/modern-tables.css';
 
 interface PatientAttendance {
-  id: number;
+  id?: number;
+  attendance_id?: number;
   patient_id: string;
   patient_name: string;
   date: string;
@@ -144,22 +145,27 @@ const PatientAttendance: React.FC = () => {
     try {
       const dateString = format(selectedDate, 'yyyy-MM-dd');
       
-      // Find the attendance record to delete
+      // Find the attendance record to delete (comparing numeric patient IDs)
       const attendanceRecord = attendanceRecords.find(record => 
-        record.patient_id === patientId && format(new Date(record.date), 'yyyy-MM-dd') === dateString
+        parseInt(record.patient_id) === parseInt(patientId) && format(new Date(record.date), 'yyyy-MM-dd') === dateString
       );
       
-      if (attendanceRecord && attendanceRecord.id) {
-        await DatabaseService.deletePatientAttendanceById(attendanceRecord.id);
+      if (attendanceRecord && (attendanceRecord.id || attendanceRecord.attendance_id)) {
+        const recordId = attendanceRecord.id || attendanceRecord.attendance_id;
+        await DatabaseService.deletePatientAttendanceById(recordId);
         
-        // Update the local attendance records by filtering out the reset record
-        setAttendanceRecords(prev => 
-          prev.filter(record => record.id !== attendanceRecord.id)
-        );
+        // Refresh the data to ensure UI is up to date
+        await loadAttendanceRecords();
 
         toast({
           title: "Attendance Reset",
           description: `${patientName}'s attendance has been reset`,
+        });
+      } else {
+        toast({
+          title: "No Record Found",
+          description: `No attendance record found for ${patientName} on ${format(selectedDate, 'PPP')}`,
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -174,59 +180,39 @@ const PatientAttendance: React.FC = () => {
 
   const markAttendance = async (patientId: string, patientName: string, status: 'Present' | 'Absent' | 'Late') => {
     try {
-      console.log('🎯 markAttendance called:', { patientId, patientName, status, selectedDate });
       const dateString = format(selectedDate, 'yyyy-MM-dd');
       const checkInTime = status !== 'Absent' ? format(new Date(), 'HH:mm:ss') : '';
       
-      // Check if attendance record already exists for this patient and date
-      const existingAttendance = getAttendanceForDate(patientId, selectedDate);
-      console.log('🔍 Existing attendance found:', existingAttendance);
-      
-      if (existingAttendance && existingAttendance.id) {
-        // Update existing record
-        console.log('🔄 Updating existing attendance record:', existingAttendance.id);
-        await DatabaseService.updatePatientAttendance(existingAttendance.id, {
-          status,
-          checkInTime,
-          notes: `Updated to ${status} at ${format(new Date(), 'HH:mm:ss')}`
-        });
-        console.log('✅ Update successful');
-      } else {
-        // Create new record
-        console.log('➕ Creating new attendance record');
-        await DatabaseService.markPatientAttendance({
-          patientId: patientId,
-          patientName: patientName,
-          date: dateString,
-          checkInTime: checkInTime,
-          status
-        });
-        console.log('✅ Create successful');
-      }
+      await DatabaseService.markPatientAttendance({
+        patientId: patientId,
+        patientName: patientName,
+        date: dateString,
+        checkInTime: checkInTime,
+        status
+      });
 
       await loadAttendanceRecords();
       toast({
-        title: "Attendance Updated",
+        title: "Attendance Marked",
         description: `${patientName} marked as ${status}`,
       });
     } catch (error) {
-      console.error('❌ Error marking attendance:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to mark attendance";
+      console.error('Error marking attendance:', error);
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to mark attendance",
         variant: "destructive",
       });
     }
   };
 
-  const getAttendanceForDate = (patientId: string, date: Date) => {
+  const getAttendanceForDate = (patientId: number, date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd');
     const record = attendanceRecords.find(
       record => {
         // Convert database date to yyyy-MM-dd format for comparison
         const recordDate = record.date ? format(new Date(record.date), 'yyyy-MM-dd') : '';
-        const isMatch = record.patient_id === patientId && recordDate === dateString;
+        const isMatch = parseInt(record.patient_id) === patientId && recordDate === dateString;
         return isMatch;
       }
     );
@@ -616,7 +602,7 @@ const PatientAttendance: React.FC = () => {
                   <TableBody>
                     {currentPatients.length > 0 ? (
                       currentPatients.map((patient, idx) => {
-                        const attendance = getAttendanceForDate(patient.patient_id, selectedDate);
+                        const attendance = getAttendanceForDate(patient.id, selectedDate);
                         return (
                           <TableRow key={patient.patient_id} className="bg-white border-b hover:bg-gray-50 transition-colors">
                             <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{startIndex + idx + 1}</TableCell>
@@ -652,7 +638,7 @@ const PatientAttendance: React.FC = () => {
                               <div className="action-buttons-container">
                                 <Button
                                   size="sm"
-                                  onClick={() => markAttendance(patient.patient_id, patient.name, 'Present')}
+                                  onClick={() => markAttendance(patient.id.toString(), patient.name, 'Present')}
                                   variant="outline"
                                   className={`action-btn-lead action-btn-present h-8 w-8 sm:h-9 sm:w-9 p-0 ${
                                     attendance?.status === 'Present' ? 'active' : ''
@@ -663,7 +649,7 @@ const PatientAttendance: React.FC = () => {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => markAttendance(patient.patient_id, patient.name, 'Late')}
+                                  onClick={() => markAttendance(patient.id.toString(), patient.name, 'Late')}
                                   variant="outline"
                                   className={`action-btn-lead action-btn-late h-8 w-8 sm:h-9 sm:w-9 p-0 ${
                                     attendance?.status === 'Late' ? 'active' : ''
@@ -674,7 +660,7 @@ const PatientAttendance: React.FC = () => {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => markAttendance(patient.patient_id, patient.name, 'Absent')}
+                                  onClick={() => markAttendance(patient.id.toString(), patient.name, 'Absent')}
                                   variant="outline"
                                   className={`action-btn-lead action-btn-absent h-8 w-8 sm:h-9 sm:w-9 p-0 ${
                                     attendance?.status === 'Absent' ? 'active' : ''
@@ -685,7 +671,7 @@ const PatientAttendance: React.FC = () => {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => resetAttendance(patient.patient_id, patient.name)}
+                                  onClick={() => resetAttendance(patient.id.toString(), patient.name)}
                                   variant="outline"
                                   className="action-btn-lead action-btn-reset h-8 w-8 sm:h-9 sm:w-9 p-0"
                                   title="Reset Attendance"

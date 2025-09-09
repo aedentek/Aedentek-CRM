@@ -1,6 +1,6 @@
 // Centralized database service for all MySQL operations via REST API
 export class DatabaseService {
-  private static readonly apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  private static readonly apiBaseUrl = import.meta.env.VITE_API_URL;
 
   // --- Staff Management ---
   // Empty space - removing duplicate methods as they are defined later in the file
@@ -553,13 +553,25 @@ export class DatabaseService {
     checkInTime?: string;
     status: 'Present' | 'Absent' | 'Late';
   }) {
-    // Always use POST - the backend handles insert/update logic
-    const res = await fetch(`${this.apiBaseUrl}/patient-attendance`, {
+    // Use the mark endpoint which handles insert/update logic
+    const payload = {
+      patient_id: data.patientId, // Use the numeric ID directly (no prefix removal needed)
+      status: data.status,
+      check_in_time: data.checkInTime,
+      notes: `Marked as ${data.status} at ${new Date().toLocaleString()}`
+    };
+    
+    const res = await fetch(`${this.apiBaseUrl}/patient-attendance/mark`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('Failed to mark patient attendance');
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error('Failed to mark patient attendance: ' + errorText);
+    }
+    
     return res.json();
   }
 
@@ -959,13 +971,25 @@ export class DatabaseService {
     return res.json();
   }
   static async updateMedicineProduct(id: string | number, data: any) {
+    console.log('🔍 DatabaseService.updateMedicineProduct called with:', { id, data });
+    
     const res = await fetch(`${this.apiBaseUrl}/medicine-products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error('Failed to update medicine product');
-    return res.json();
+    
+    console.log('🔍 API response status:', res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ API error:', errorText);
+      throw new Error('Failed to update medicine product');
+    }
+    
+    const result = await res.json();
+    console.log('✅ API response data:', result);
+    return result;
   }
   static async deleteMedicineProduct(id: string | number) {
     const res = await fetch(`${this.apiBaseUrl}/medicine-products/${id}`, {

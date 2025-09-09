@@ -187,54 +187,6 @@ router.get('/favicon', async (req, res) => {
   }
 });
 
-// Favicon health check endpoint
-router.get('/favicon/health', async (req, res) => {
-  console.log('🩺 Favicon health check requested');
-  try {
-    const [rows] = await db.execute(
-      'SELECT setting_value, file_path FROM app_settings WHERE setting_key = ?', 
-      ['website_favicon']
-    );
-    
-    if (rows.length === 0) {
-      return res.json({
-        status: 'error',
-        message: 'No favicon found in database',
-        hasDatabase: true,
-        hasFaviconRecord: false
-      });
-    }
-    
-    const faviconPath = rows[0].file_path || rows[0].setting_value;
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    // Check if file exists on server
-    const fullPath = path.join(process.cwd(), faviconPath);
-    const fileExists = fs.existsSync(fullPath);
-    
-    res.json({
-      status: fileExists ? 'healthy' : 'warning',
-      message: fileExists ? 'Favicon is accessible' : 'Favicon file not found on server',
-      hasDatabase: true,
-      hasFaviconRecord: true,
-      faviconPath: faviconPath,
-      fullPath: fullPath,
-      fileExists: fileExists,
-      serverTime: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ Error in favicon health check:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Favicon health check failed',
-      hasDatabase: false,
-      error: error.message 
-    });
-  }
-});
-
 router.get('/settings/:key', async (req, res) => {
   console.log(`🔍 Settings key route hit with key: ${req.params.key}`);
   try {

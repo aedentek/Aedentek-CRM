@@ -26,7 +26,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Scrolling images for the left side
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_URL;
   const backendUrl = apiBaseUrl.replace('/api', ''); // Remove /api to get base backend URL
   
   const scrollingImages = [
@@ -54,7 +54,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, [navigate]);
 
-  // Load website settings on page load (non-blocking)
+  // Load website settings on page load
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -63,10 +63,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         console.log('✅ Website settings applied successfully');
       } catch (error) {
         console.error('❌ Failed to load settings:', error);
-        // Don't block the login page if settings fail
       }
     };
-    // Load in background without blocking UI
     loadSettings();
   }, []);
 
@@ -106,7 +104,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     
     try {
       // Use the new login endpoint that connects to the database
-      const loginResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/login`, {
+      const loginResponse = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -155,60 +155,7 @@ router.delete('/grocery-categories/:id', async (req, res) => {
   }
 });
 
-// Grocery Suppliers Endpoints
-// Get all grocery suppliers
-router.get('/grocery-suppliers', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM grocery_suppliers ORDER BY id DESC');
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Add a grocery supplier
-router.post('/grocery-suppliers', async (req, res) => {
-  const { name, contactPerson, email, phone, address, status } = req.body;
-  if (!name || !contactPerson || !email || !phone) return res.status(400).json({ error: 'Missing required fields' });
-  try {
-    const [result] = await db.query(
-      'INSERT INTO grocery_suppliers (name, contact_person, email, phone, address, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, contactPerson, email, phone, address, status || 'active']
-    );
-    const [rows] = await db.query('SELECT * FROM grocery_suppliers WHERE id = ?', [result.insertId]);
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update a grocery supplier
-router.put('/grocery-suppliers/:id', async (req, res) => {
-  const { name, contactPerson, email, phone, address, status } = req.body;
-  try {
-    await db.query(
-      'UPDATE grocery_suppliers SET name=?, contact_person=?, email=?, phone=?, address=?, status=? WHERE id=?',
-      [name, contactPerson, email, phone, address, status, req.params.id]
-    );
-    const [rows] = await db.query('SELECT * FROM grocery_suppliers WHERE id = ?', [req.params.id]);
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Delete a grocery supplier
-router.delete('/grocery-suppliers/:id', async (req, res) => {
-  try {
-    const [result] = await db.query('DELETE FROM grocery_suppliers WHERE id = ?', [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Supplier not found' });
-    res.json({ message: 'Supplier deleted' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Grocery Settlement History Endpoints
+// === GROCERY SETTLEMENT HISTORY ENDPOINTS ===
 // Get settlement history for a grocery product
 router.get('/grocery-settlement-history/:productId', async (req, res) => {
   try {

@@ -72,12 +72,58 @@ const MedicineAccounts: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Month/Year filtering states - must be declared before useEffect
+  const currentYear = new Date().getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-based like Grocery Management
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [showMonthYearDialog, setShowMonthYearDialog] = useState(false);
+  const [filterMonth, setFilterMonth] = useState<number | null>(new Date().getMonth() + 1); // Also 1-based
+  const [filterYear, setFilterYear] = useState<number | null>(currentYear);
+
   React.useEffect(() => {
     (async () => {
       if (refreshKey > 0) console.log('Refreshing data...');
       try {
-        const data = await DatabaseService.getAllMedicineProducts();
-        setAccounts(data);
+        setLoading(true);
+        
+        // Get all medicine products with their outstanding balances
+        const medicineData = await DatabaseService.getAllMedicineProducts();
+        console.log('📊 Raw medicine data received:', medicineData);
+        
+        // Filter to show only medicines with outstanding balances (balance_amount > 0)
+        // OR medicines purchased in the current selected month/year
+        const currentYear = filterYear;
+        const currentMonth = filterMonth;
+        
+        console.log('🔍 Filter criteria:', { currentYear, currentMonth });
+        
+        const accountsWithBalances = medicineData.filter((medicine: any) => {
+          // Show if there's an outstanding balance
+          const hasBalance = (medicine.balance_amount || 0) > 0;
+          console.log(`📋 Medicine ${medicine.name}: balance_amount = ${medicine.balance_amount}, hasBalance = ${hasBalance}`);
+          
+          // Show if purchased in current selected month/year
+          const isPurchasedInPeriod = (() => {
+            if (!medicine.purchase_date && !medicine.created_at) return false;
+            
+            const purchaseDate = new Date(medicine.purchase_date || medicine.created_at);
+            const purchaseYear = purchaseDate.getFullYear();
+            const purchaseMonth = purchaseDate.getMonth() + 1;
+            
+            const matches = purchaseYear === currentYear && purchaseMonth === currentMonth;
+            console.log(`📅 Medicine ${medicine.name}: purchase date = ${medicine.purchase_date}, matches period = ${matches}`);
+            
+            return matches;
+          })();
+          
+          const shouldInclude = hasBalance || isPurchasedInPeriod;
+          console.log(`✅ Medicine ${medicine.name}: should include = ${shouldInclude} (hasBalance: ${hasBalance}, isPurchasedInPeriod: ${isPurchasedInPeriod})`);
+          
+          return shouldInclude;
+        });
+        
+        console.log(`📊 Found ${accountsWithBalances.length} medicines with balances or current period purchases`);
+        setAccounts(accountsWithBalances);
         
         // Load doctors data for Active Doctors stats
         try {
@@ -89,12 +135,12 @@ const MedicineAccounts: React.FC = () => {
           setLoadingDoctors(false);
         }
       } catch (e) {
-        // Optionally show error
+        console.error('Error loading medicine accounts:', e);
       } finally {
         setLoading(false);
       }
     })();
-  }, [refreshKey]);
+  }, [refreshKey, filterYear, filterMonth]);
 
   // Auto-refresh data periodically
   React.useEffect(() => {
@@ -130,12 +176,6 @@ const MedicineAccounts: React.FC = () => {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-  const currentYear = new Date().getFullYear();
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-based like Grocery Management
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [showMonthYearDialog, setShowMonthYearDialog] = useState(false);
-  const [filterMonth, setFilterMonth] = useState<number | null>(new Date().getMonth() + 1); // Also 1-based
-  const [filterYear, setFilterYear] = useState<number | null>(currentYear);
 
   const { toast } = useToast();
 
@@ -422,7 +462,7 @@ const MedicineAccounts: React.FC = () => {
     }
   };
 
-  // Filter accounts
+  // Filter accounts - Show unsettled amounts from ANY month + current period purchases
   const filteredAccounts = accounts.filter(item => {
     const status = item.payment_status || 'pending';
     const matchesSearch = (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -430,19 +470,21 @@ const MedicineAccounts: React.FC = () => {
       (item.supplier || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || status === statusFilter;
     
-    if (filterMonth !== null && filterYear !== null) {
-      const dateStr = item.purchase_date;
+    // Show if has outstanding balance (regardless of purchase date)
+    const hasOutstandingBalance = (item.balance_amount || 0) > 0;
+    
+    // Show if purchased in selected month/year
+    const isPurchasedInSelectedPeriod = (() => {
+      if (filterMonth === null || filterYear === null) return true;
+      const dateStr = item.purchase_date || item.created_at;
       if (!dateStr) return false;
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return false;
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        d.getMonth() === filterMonth - 1 && // Convert 1-based to 0-based for comparison
-        d.getFullYear() === filterYear
-      );
-    }
-    return matchesSearch && matchesStatus;
+      return d.getMonth() === filterMonth - 1 && d.getFullYear() === filterYear;
+    })();
+    
+    // Include item if: (has outstanding balance OR purchased in selected period) AND matches search/status
+    return matchesSearch && matchesStatus && (hasOutstandingBalance || isPurchasedInSelectedPeriod);
   });
 
   // Pagination logic
@@ -497,6 +539,9 @@ const MedicineAccounts: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Medicine Accounts</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Including outstanding balances from previous months
+                </p>
               </div>
             </div>
           
@@ -686,6 +731,7 @@ const MedicineAccounts: React.FC = () => {
                     <TableHead className="crm-table-head">Product Name</TableHead>
                     <TableHead className="crm-table-head">Category</TableHead>
                     <TableHead className="crm-table-head">Supplier</TableHead>
+                    <TableHead className="crm-table-head">Purchase Date</TableHead>
                     <TableHead className="crm-table-head">Quantity</TableHead>
                     <TableHead className="crm-table-head">Rate</TableHead>
                     <TableHead className="crm-table-head">Purchase Amount</TableHead>
@@ -718,6 +764,9 @@ const MedicineAccounts: React.FC = () => {
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm whitespace-nowrap">{item.name}</TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{item.category}</TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{item.supplier}</TableCell>
+                    <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
+                      {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString('en-IN') : new Date(item.created_at).toLocaleDateString('en-IN')}
+                    </TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{item.quantity}</TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">₹{Number(item.price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm whitespace-nowrap">₹{purchaseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>

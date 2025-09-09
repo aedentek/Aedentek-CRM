@@ -1,6 +1,6 @@
 import { DoctorSalary, DoctorSalaryPayment, DoctorSalaryHistory } from '../types/doctorSalary';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export class DoctorSalaryAPI {
   // Get all doctors with salary information

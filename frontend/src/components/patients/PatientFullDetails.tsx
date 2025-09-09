@@ -236,7 +236,7 @@ const PatientFullDetails: React.FC = () => {
 
   const loadAttendanceRecords = async (originalPatientId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/patient-attendance`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patient-attendance`);
       if (response.ok) {
         const data = await response.json();
         const records = (data.data || data).filter((record: any) => 
@@ -251,7 +251,7 @@ const PatientFullDetails: React.FC = () => {
 
   const loadMedicalRecords = async (originalPatientId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/patient-medical-records`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patient-medical-records`);
       if (response.ok) {
         const data = await response.json();
         const records = (data.data || data).filter((record: any) => 
@@ -266,7 +266,7 @@ const PatientFullDetails: React.FC = () => {
 
   const loadPatientHistory = async (originalPatientId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/patient-history`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patient-history`);
       if (response.ok) {
         const data = await response.json();
         const records = (data.data || data).filter((record: any) => 
@@ -281,7 +281,7 @@ const PatientFullDetails: React.FC = () => {
 
   const loadCallRecords = async (originalPatientId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/patient-call-records`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patient-call-records`);
       if (response.ok) {
         const data = await response.json();
         const records = (data.data || data).filter((record: any) => 
@@ -296,7 +296,7 @@ const PatientFullDetails: React.FC = () => {
 
   const loadPaymentRecords = async (originalPatientId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/patient-payment-fees`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patient-payment-fees`);
       if (response.ok) {
         const data = await response.json();
         const records = (data.data || data).filter((record: any) => 

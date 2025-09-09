@@ -173,7 +173,7 @@ router.put('/medicine-products/:id', async (req, res) => {
   const {
     name, description, category, supplier, manufacturer, batch_number, expiry_date,
     price, quantity, status, purchase_date, purchase_amount, settlement_amount,
-    balance_amount, payment_status, payment_type
+    balance_amount, payment_status, payment_type, used_stock, stock_status, last_update
   } = req.body;
   
   try {
@@ -210,6 +210,11 @@ router.put('/medicine-products/:id', async (req, res) => {
     if (balance_amount !== undefined) { updateFields.push('balance_amount=?'); values.push(balance_amount); }
     if (payment_status !== undefined) { updateFields.push('payment_status=?'); values.push(payment_status); }
     if (payment_type !== undefined) { updateFields.push('payment_type=?'); values.push(payment_type); }
+    
+    // Add support for stock management fields
+    if (used_stock !== undefined) { updateFields.push('used_stock=?'); values.push(used_stock); }
+    if (stock_status !== undefined) { updateFields.push('stock_status=?'); values.push(stock_status); }
+    if (last_update !== undefined) { updateFields.push('last_update=?'); values.push(last_update); }
     
     if (updateFields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });

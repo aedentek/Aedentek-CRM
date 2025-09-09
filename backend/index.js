@@ -38,19 +38,19 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ quiet: true });
 const app = express();
-const PORT = process.env.PORT || process.env.API_PORT || 10000;
+const PORT = process.env.PORT || process.env.API_PORT;
 
 // Enhanced CORS configuration for production
 app.use(cors({
   origin: [
-    'https://admin.gandhibaideaddictioncenter.com',
-    // 'https://crm.gandhibaideaddictioncenter.com', 
+    process.env.VITE_BASE_URL, // Frontend URL from .env
+    process.env.VITE_API_URL?.replace('/api', ''), // Backend URL from .env
     'http://localhost:8080',
-    'http://localhost:8081',
-    'http://localhost:8082',
+    'http://localhost:3000',
     'http://localhost:5173',
-    'http://localhost:3000'
-  ],
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:3000'
+  ].filter(Boolean), // Remove any undefined values
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -75,13 +75,18 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Enhanced request logging middleware
 app.use((req, res, next) => {
-  const start = Date.now();
   console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  console.log(`📍 Origin: ${req.get('Origin') || 'No Origin'}`);
+  console.log(`📋 User-Agent: ${req.get('User-Agent')?.substring(0, 50) || 'No UA'}...`);
   
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`� ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
-  });
+  // Debug middleware for DELETE requests
+  if (req.method === 'DELETE') {
+    console.log(`🗑️ DELETE REQUEST DEBUG:`);
+    console.log(`🗑️ URL: ${req.originalUrl}`);
+    console.log(`🗑️ Path: ${req.path}`);
+    console.log(`🗑️ Base URL: ${req.baseUrl}`);
+    console.log(`🗑️ Params:`, req.params);
+  }
   
   next();
 });
@@ -89,21 +94,11 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('🚨 Error:', err);
-  
-  // Send appropriate error response
-  if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-    res.status(503).json({ 
-      error: 'Database connection error', 
-      message: 'Unable to connect to database. Please try again later.',
-      path: req.path 
-    });
-  } else {
-    res.status(500).json({ 
-      error: 'Internal server error', 
-      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-      path: req.path 
-    });
-  }
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: err.message,
+    path: req.path 
+  });
 });
 
 
@@ -116,15 +111,15 @@ app.use('/Photos', express.static(path.join(__dirname, 'Photos')));
 // Note: Frontend is deployed separately to Hostinger, no dist serving needed
 console.log('📁 Static file serving configured for uploads and photos only');
 
-console.log('⚡ Optimized MySQL pool connected to srv1639.hstgr.io');
+console.log(`⚡ Optimized MySQL pool connected to ${process.env.DB_HOST}`);
 
 // Test database connection on startup with enhanced error handling
 async function testDatabaseConnection() {
   console.log('🔍 Testing database connection...');
-  console.log('🌐 Environment:', process.env.NODE_ENV || 'development');
-  console.log('🏠 DB Host:', process.env.DB_HOST || 'srv1639.hstgr.io');
-  console.log('👤 DB User:', process.env.DB_USER || 'u745362362_crmusername');
-  console.log('🗃️ DB Name:', process.env.DB_NAME || 'u745362362_crm');
+  console.log('🌐 Environment:', process.env.NODE_ENV);
+  console.log('🏠 DB Host:', process.env.DB_HOST);
+  console.log('👤 DB User:', process.env.DB_USER);
+  console.log('🗃️ DB Name:', process.env.DB_NAME);
   
   try {
     const [results] = await db.execute('SELECT 1 as test, NOW() as timestamp, @@version as mysql_version');
@@ -180,12 +175,12 @@ app.get('/api/health', async (req, res) => {
 // Add debug endpoint for database connection info
 app.get('/api/debug/db', (req, res) => {
   res.json({
-    host: process.env.DB_HOST || 'srv1639.hstgr.io',
-    user: process.env.DB_USER || 'u745362362_crmusername',
-    database: process.env.DB_NAME || 'u745362362_crm',
-    port: process.env.DB_PORT || 4000,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306,
     ssl_enabled: true,
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV
   });
 });
 
@@ -197,6 +192,7 @@ app.use('/api', grocery);
 app.use('/api', uploads); // MOVED BEFORE PATIENTS TO TAKE PRIORITY
 console.log('📁 Uploads middleware registered at /api');
 app.use('/api', performance);
+app.use('/api', patientPayments); // MOVED BEFORE PATIENTS TO TAKE PRIORITY
 app.use('/api', patients);
 app.use('/api', staff);
 app.use('/api', management);
@@ -213,7 +209,6 @@ app.use('/api', doctorAdvance);
 app.use('/api', staffAdvance);
 app.use('/api', doctorSalary);
 app.use('/api', staffSalary);
-app.use('/api', patientPayments);
 console.log('🧪 Test Reports middleware registered at /api');
 console.log('👨‍⚕️ Staff Advance middleware registered at /api');
 console.log('💰 Doctor Salary middleware registered at /api');
@@ -223,117 +218,23 @@ console.log('🏥 Patient Payments middleware registered at /api');
 // Frontend is deployed separately to Hostinger, so no static file serving needed
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Test database connection
-    await db.query('SELECT 1 as test');
-    
-    res.status(200).json({ 
-      status: 'OK', 
-      message: 'CRM Backend is running',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
-      database: 'Connected'
-    });
-  } catch (error) {
-    console.error('❌ Health check failed:', error.message);
-    res.status(503).json({ 
-      status: 'ERROR', 
-      message: 'Database connection failed',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
-      database: 'Disconnected',
-      error: error.message
-    });
-  }
-});
-
-// Debug endpoint to check environment variables (remove after debugging)
-app.get('/debug-env', (req, res) => {
-  console.log('🔍 Debug endpoint called - checking environment variables');
-  res.status(200).json({
-    environment_variables: {
-      DB_HOST: process.env.DB_HOST || 'NOT SET',
-      DB_USER: process.env.DB_USER || 'NOT SET', 
-      DB_PASSWORD: process.env.DB_PASSWORD ? '***SET***' : 'NOT SET',
-      DB_NAME: process.env.DB_NAME || 'NOT SET',
-      NODE_ENV: process.env.NODE_ENV || 'NOT SET',
-      PORT: process.env.PORT || 'NOT SET'
-    },
-    render_info: {
-      timestamp: new Date().toISOString(),
-      platform: process.platform,
-      node_version: process.version
-    }
-  });
-});
-
-// Test database connection endpoint
-app.get('/test-db', async (req, res) => {
-  try {
-    console.log('🧪 Testing database connection...');
-    const testConnection = await db.getConnection();
-    await testConnection.ping();
-    const [rows] = await testConnection.execute('SELECT 1 as test, NOW() as current_time');
-    testConnection.release();
-    
-    res.status(200).json({
-      status: 'SUCCESS',
-      message: 'Database connection test successful',
-      test_query: rows[0],
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('❌ Database test failed:', error);
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Database connection test failed',
-      error: error.message,
-      error_code: error.code,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Root route for backend status
-app.get('/', (req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).json({ 
-    message: 'CRM Backend API is running',
-    version: '1.0.0',
+    status: 'OK', 
+    message: 'CRM Backend is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    endpoints: {
-      health: '/health',
-      api: '/api/*',
-      documentation: 'API endpoints available at /api/*'
-    }
+    environment: process.env.NODE_ENV
   });
 });
 
 // API status endpoint  
-app.get('/api/health', async (req, res) => {
-  try {
-    // Test database connection
-    await db.query('SELECT 1 as test');
-    
-    res.status(200).json({ 
-      status: 'OK', 
-      message: 'CRM API is ready',
-      timestamp: new Date().toISOString(),
-      endpoints: 'All API endpoints available',
-      database: 'Connected'
-    });
-  } catch (error) {
-    console.error('❌ API health check failed:', error.message);
-    res.status(503).json({ 
-      status: 'ERROR', 
-      message: 'API database connection failed',
-      timestamp: new Date().toISOString(),
-      endpoints: 'API endpoints may be unavailable',
-      database: 'Disconnected',
-      error: error.message
-    });
-  }
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'CRM API is ready',
+    timestamp: new Date().toISOString(),
+    endpoints: 'All API endpoints available'
+  });
 });
 
 // Simple test endpoint for frontend connectivity testing
@@ -342,9 +243,61 @@ app.get('/api/test', (req, res) => {
     status: 'SUCCESS', 
     message: 'Frontend-Backend connection working perfectly!',
     timestamp: new Date().toISOString(),
-    apiUrl: 'https://crm-czuu.onrender.com/api',
-    frontendUrl: 'https://admin.gandhibaideaddictioncenter.com'
+    apiUrl: process.env.VITE_API_URL,
+    frontendUrl: process.env.VITE_BASE_URL
   });
+});
+
+// ⚡ PLACEHOLDER IMAGE ENDPOINT (FIXES 404 ERRORS) ⚡
+app.get('/api/placeholder/:width/:height', (req, res) => {
+  const { width, height } = req.params;
+  
+  // Generate a clean, professional placeholder SVG
+  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <rect width="${width}" height="${height}" fill="url(#grad)" stroke="#dee2e6" stroke-width="1"/>
+    <circle cx="${width/2}" cy="${height/2 - 6}" r="8" fill="#6c757d" opacity="0.5"/>
+    <text x="50%" y="${height/2 + 8}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="10" fill="#6c757d" opacity="0.7">No Photo</text>
+  </svg>`;
+  
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+  res.send(svg);
+});
+
+// 🎯 FAVICON ENDPOINT (FOR DYNAMIC FAVICON LOADING) 🎯
+app.get('/api/favicon', async (req, res) => {
+  try {
+    console.log('🎯 Favicon requested from database');
+    const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_name = "website_favicon"');
+    
+    if (rows.length > 0 && rows[0].setting_value) {
+      const faviconPath = rows[0].setting_value;
+      console.log('✅ Favicon path from database:', faviconPath);
+      res.json({ 
+        success: true, 
+        faviconPath: faviconPath
+      });
+    } else {
+      console.log('⚠️ No favicon found in database, using default');
+      res.json({ 
+        success: true, 
+        faviconPath: '/default-favicon.ico'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error fetching favicon:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch favicon',
+      faviconPath: '/default-favicon.ico'
+    });
+  }
 });
 
 // Catch-all for undefined API routes
@@ -381,21 +334,11 @@ console.log('📋 Using existing database tables (table creation skipped for pro
 
 
 // Bind server to all interfaces so external checks can detect the service
-app.listen(PORT, '0.0.0.0', async () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`📝 CRM API endpoints are ready`);
-  
-  // Test database connection at startup
-  try {
-    await db.query('SELECT 1 as test');
-    console.log(`💾 Database connection established successfully`);
-  } catch (error) {
-    console.error(`❌ Database connection failed at startup:`, error.message);
-  }
-  
+  console.log(`💾 Database connection established`);
   console.log(`🔧 Effective PORT env value: ${PORT} (PORT: ${process.env.PORT}, API_PORT: ${process.env.API_PORT})`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️ Database: ${process.env.DB_HOST || 'srv1639.hstgr.io'}`);
 });
 
 

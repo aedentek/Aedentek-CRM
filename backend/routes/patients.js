@@ -1169,16 +1169,16 @@ router.put('/patient-payments/:id', async (req, res) => {
   }
 });
 
-// Delete a payment record
-router.delete('/patient-payments/:id', async (req, res) => {
-  try {
-    const [result] = await db.query('DELETE FROM patient_payments WHERE id=?', [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Payment record not found' });
-    res.json({ message: 'Payment record deleted successfully', id: req.params.id });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Delete a payment record - COMMENTED OUT: Moved to dedicated patient-payments.js router
+// router.delete('/patient-payments/:id', async (req, res) => {
+//   try {
+//     const [result] = await db.query('DELETE FROM patient_payments WHERE id=?', [req.params.id]);
+//     if (result.affectedRows === 0) return res.status(404).json({ error: 'Payment record not found' });
+//     res.json({ message: 'Payment record deleted successfully', id: req.params.id });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 // CASCADE DELETION ENDPOINTS FOR PATIENTS
 

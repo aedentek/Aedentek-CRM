@@ -78,7 +78,7 @@ const RoleManagement: React.FC = () => {
   React.useEffect(() => {
     const fetchRoleTemplates = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/roles`);
         const data = await res.json();
         const templates = data.map((role: any) => ({
           id: role.id.toString(),
@@ -99,7 +99,7 @@ const RoleManagement: React.FC = () => {
         if (showLoadingSpinner) {
           setLoading(true);
         }
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/roles`);
         const data = await res.json();
         const mappedRoles = data.map((role: any) => ({
           id: role.id.toString(),
@@ -162,7 +162,7 @@ const RoleManagement: React.FC = () => {
       const currentSearchTerm = searchTerm;
       const currentStatusFilter = statusFilter;
       
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/roles`);
       const data = await res.json();
       const freshRoles = data.map((role: any) => ({
         id: role.id.toString(),
@@ -229,7 +229,7 @@ const RoleManagement: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -275,7 +275,7 @@ const RoleManagement: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles/${editingRole.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/roles/${editingRole.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -315,7 +315,7 @@ const RoleManagement: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles/${roleToDelete.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/roles/${roleToDelete.id}`, {
         method: 'DELETE'
       });
 

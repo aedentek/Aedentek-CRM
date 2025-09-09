@@ -11,11 +11,11 @@
 // Main backend server configuration
 export const API_CONFIG = {
   // Backend server (where your Hostinger database is connected)
-  BACKEND_URL: (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api$/, ''),
-  BACKEND_API: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  BACKEND_URL: (import.meta.env.VITE_API_URL).replace(/\/api$/, ''),
+  BACKEND_API: import.meta.env.VITE_API_URL,
   
   // Frontend development server
-  FRONTEND_URL: import.meta.env.VITE_BASE_URL || 'http://localhost:8080',
+  FRONTEND_URL: import.meta.env.VITE_BASE_URL,
   
   // Request timeout
   TIMEOUT: 10000,
@@ -271,47 +271,75 @@ export async function loadWebsiteSettings() {
     // Apply favicon from database using direct API call
     try {
       console.log('🔧 Loading favicon from database...');
-      const faviconResponse = await fetch(`${API_CONFIG.BACKEND_API}/settings/favicon`);
+      const faviconResponse = await fetch(`${API_CONFIG.BACKEND_API}/favicon`);
       
       if (faviconResponse.ok) {
         const faviconData = await faviconResponse.json();
         
         if (faviconData.success && faviconData.faviconUrl) {
-          // Remove existing favicon links
-          const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
-          existingFavicons.forEach(link => link.remove());
-          
           // Build full URL for favicon
           const fullFaviconUrl = faviconData.faviconUrl.startsWith('/') 
             ? `${API_CONFIG.BACKEND_URL}${faviconData.faviconUrl}`
             : faviconData.faviconUrl;
           
-          // Add cache busting
+          // Add aggressive cache busting with timestamp and random
           const timestamp = Date.now();
-          const faviconUrlWithCache = `${fullFaviconUrl}?v=${timestamp}`;
+          const random = Math.random().toString(36).substring(7);
+          const faviconUrlWithCache = `${fullFaviconUrl}?v=${timestamp}&r=${random}`;
           
-          // Create and add new favicon links
-          const favicon = document.createElement('link');
-          favicon.rel = 'icon';
-          favicon.type = 'image/x-icon';
-          favicon.href = faviconUrlWithCache;
-          document.head.appendChild(favicon);
+          // Preload the favicon to ensure it's available
+          const preloadLink = document.createElement('link');
+          preloadLink.rel = 'preload';
+          preloadLink.as = 'image';
+          preloadLink.href = faviconUrlWithCache;
+          document.head.appendChild(preloadLink);
           
-          const shortcutIcon = document.createElement('link');
-          shortcutIcon.rel = 'shortcut icon';
-          shortcutIcon.type = 'image/x-icon';
-          shortcutIcon.href = faviconUrlWithCache;
-          document.head.appendChild(shortcutIcon);
+          // Wait a moment for preload, then update favicon
+          setTimeout(() => {
+            // Remove ALL existing favicon-related links
+            const existingFavicons = document.querySelectorAll('link[rel*="icon"], link[rel*="shortcut"]');
+            existingFavicons.forEach(link => link.remove());
+            
+            // Create multiple favicon formats for better browser compatibility
+            const faviconTypes = [
+              { rel: 'icon', type: 'image/x-icon' },
+              { rel: 'shortcut icon', type: 'image/x-icon' },
+              { rel: 'apple-touch-icon', type: 'image/png' },
+              { rel: 'icon', type: 'image/png', sizes: '32x32' },
+              { rel: 'icon', type: 'image/png', sizes: '16x16' }
+            ];
+            
+            faviconTypes.forEach(iconType => {
+              const favicon = document.createElement('link');
+              favicon.rel = iconType.rel;
+              favicon.type = iconType.type;
+              if (iconType.sizes) favicon.sizes = iconType.sizes;
+              favicon.href = faviconUrlWithCache;
+              
+              // Force immediate update
+              favicon.onload = () => {
+                console.log(`✅ Favicon ${iconType.rel} loaded successfully`);
+              };
+              
+              favicon.onerror = () => {
+                console.warn(`⚠️ Failed to load favicon ${iconType.rel}, falling back`);
+                applyFallbackFavicon();
+              };
+              
+              document.head.appendChild(favicon);
+            });
+            
+            // Force favicon update in the browser
+            const existingLink = document.querySelector("link[rel*='icon']");
+            if (existingLink) {
+              existingLink.href = existingLink.href;
+            }
+            
+            console.log('✅ Favicon loaded from database successfully:', faviconData.faviconUrl);
+          }, 100); // Small delay to ensure preload
           
-          const appleTouchIcon = document.createElement('link');
-          appleTouchIcon.rel = 'apple-touch-icon';
-          appleTouchIcon.href = faviconUrlWithCache;
-          document.head.appendChild(appleTouchIcon);
-          
-          console.log('✅ Favicon loaded from database successfully:', faviconData.faviconUrl);
         } else {
           console.log('⚠️ No favicon found in database, using fallback');
-          // Fallback to static favicon if database doesn't have one
           applyFallbackFavicon();
         }
       } else {
@@ -333,14 +361,29 @@ export async function loadWebsiteSettings() {
 // Fallback function for static favicon
 function applyFallbackFavicon() {
   console.log('🔄 Applying fallback favicon...');
-  let link = document.querySelector("link[rel~='icon']");
-  if (!link) {
-    link = document.createElement('link');
-    link.rel = 'icon';
-    link.type = 'image/x-icon';
-    document.getElementsByTagName('head')[0].appendChild(link);
-  }
-  link.href = '/favicon.ico?v=1.0';
+  
+  // Remove all existing favicon links
+  const existingFavicons = document.querySelectorAll('link[rel*="icon"], link[rel*="shortcut"]');
+  existingFavicons.forEach(link => link.remove());
+  
+  // Create fallback favicon with cache busting
+  const timestamp = Date.now();
+  const fallbackUrl = `/favicon.ico?v=${timestamp}`;
+  
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/x-icon';
+  link.href = fallbackUrl;
+  
+  link.onload = () => {
+    console.log('✅ Fallback favicon loaded successfully');
+  };
+  
+  link.onerror = () => {
+    console.warn('⚠️ Even fallback favicon failed to load');
+  };
+  
+  document.head.appendChild(link);
   console.log('✅ Fallback favicon applied');
 }
 

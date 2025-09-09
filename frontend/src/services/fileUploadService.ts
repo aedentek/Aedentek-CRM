@@ -1,6 +1,6 @@
 // File upload service for handling patient document uploads
 export class FileUploadService {
-  private static baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+  private static baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '');
 
   /**
    * Upload a file to the server

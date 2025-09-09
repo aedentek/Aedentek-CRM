@@ -4,6 +4,7 @@ import { DatabaseService } from '@/services/databaseService';
 import { patientsAPI } from '@/utils/api';
 import { uploadPatientFile, deletePatientFile } from '@/services/simpleFileUpload';
 import { getPatientPhotoUrl, PatientPhoto } from '@/utils/photoUtils';
+import { usePatientPhotoPreloader } from '@/utils/photoPreloader'; // ⚡ PHOTO PRELOADER
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -251,6 +252,9 @@ const PatientList: React.FC = () => {
   const [loading, setLoading] = useState(false); // Only show loading on manual refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  
+  // ⚡ PRELOAD PATIENT PHOTOS FOR INSTANT DISPLAY ⚡
+  usePatientPhotoPreloader(patients);
   
   // Month/Year filter states
   const [filterMonth, setFilterMonth] = useState<number | null>(currentMonth);
@@ -1153,7 +1157,7 @@ const PatientList: React.FC = () => {
       console.log('🔄 Forcing image cache refresh...');
       const allImages = document.querySelectorAll('img');
       allImages.forEach(img => {
-        if (img.src && img.src.includes(import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'localhost:4000')) {
+        if (img.src && img.src.includes(import.meta.env.VITE_API_URL?.replace(/\/api$/, ''))) {
           // Create a completely new URL with timestamp and random parameters
           const url = new URL(img.src.split('?')[0]); // Remove existing parameters
           url.searchParams.set('t', Date.now().toString());
@@ -1199,7 +1203,7 @@ const PatientList: React.FC = () => {
         const updatedPatientImages = document.querySelectorAll(`img[alt*="${updatedEditPatient.name}"]`);
         updatedPatientImages.forEach(img => {
           const imgElement = img as HTMLImageElement;
-          if (imgElement.src && imgElement.src.includes(import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'localhost:4000')) {
+          if (imgElement.src && imgElement.src.includes(import.meta.env.VITE_API_URL?.replace(/\/api$/, ''))) {
             const url = new URL(imgElement.src.split('?')[0]);
             url.searchParams.set('final_refresh', Date.now().toString());
             url.searchParams.set('patient_updated', updatedEditPatient.id);

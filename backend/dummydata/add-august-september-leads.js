@@ -1,7 +1,7 @@
 // Script to add 30 sample leads for August and September 2025
 // 15 leads for current month (August) and 15 leads for next month (September)
 
-const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.VITE_API_URL;
 
 const augustLeads = [
   {

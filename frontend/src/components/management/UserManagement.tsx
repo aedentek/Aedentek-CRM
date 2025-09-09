@@ -37,7 +37,7 @@ const UserManagement: React.FC = () => {
         setLoading(true);
       }
       console.log('🔍 Fetching users from backend...');
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/management-users`);
       console.log('🔗 Users fetch response status:', res.status);
       
       if (!res.ok) {
@@ -91,7 +91,7 @@ const UserManagement: React.FC = () => {
     const fetchRoles = async () => {
       try {
         console.log('🔍 Fetching roles from backend...');
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/roles`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/roles`);
         console.log('🔗 Roles fetch response status:', res.status);
         
         if (!res.ok) {
@@ -132,7 +132,7 @@ const UserManagement: React.FC = () => {
       if (editingUser) {
         console.log('📝 Updating existing user:', editingUser.id);
         // Update user via API
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users/${editingUser.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/management-users/${editingUser.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -163,7 +163,7 @@ const UserManagement: React.FC = () => {
         };
         console.log('📤 POST request body:', requestBody);
         
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/management-users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
@@ -214,7 +214,7 @@ const UserManagement: React.FC = () => {
     if (!userToDelete) return;
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/management-users/${userToDelete.id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/management-users/${userToDelete.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete user');
       
       // Refresh the users list from backend to ensure immediate display

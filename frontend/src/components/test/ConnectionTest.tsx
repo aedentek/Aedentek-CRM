@@ -10,7 +10,7 @@ const ConnectionTest = () => {
       setBackendStatus('Testing connection...');
       setError(null);
       
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const apiUrl = import.meta.env.VITE_API_URL;
       console.log('Testing API URL:', apiUrl);
       
       const response = await fetch(`${apiUrl}/test`);
@@ -45,11 +45,11 @@ const ConnectionTest = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <strong>Frontend URL:</strong><br />
-            {import.meta.env.VITE_BASE_URL || 'http://localhost:4000'}
+            {import.meta.env.VITE_BASE_URL}
           </div>
           <div>
             <strong>Backend API URL:</strong><br />
-            {import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}
+            {import.meta.env.VITE_API_URL}
           </div>
         </div>
       </div>

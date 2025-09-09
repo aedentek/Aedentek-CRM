@@ -30,7 +30,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({
   const [formValue, setFormValue] = useState(setting.setting_value || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    setting.file_path ? `http://localhost:4000${setting.file_path}` : null
+    setting.file_path ? `${import.meta.env.VITE_API_URL?.replace('/api', '')}${setting.file_path}` : null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
