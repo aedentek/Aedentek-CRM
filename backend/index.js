@@ -121,32 +121,44 @@ async function testDatabaseConnection() {
   console.log('👤 DB User:', process.env.DB_USER);
   console.log('🗃️ DB Name:', process.env.DB_NAME);
   
-  try {
-    const [results] = await db.execute('SELECT 1 as test, NOW() as timestamp, @@version as mysql_version');
-    console.log('✅ Database connection test successful');
-    console.log('📊 Test result:', results[0]);
-    console.log('🔗 MySQL version:', results[0].mysql_version);
-    return true;
-  } catch (err) {
-    console.error('❌ Database connection test failed:');
-    console.error('   Error Code:', err.code || 'Unknown');
-    console.error('   Error Message:', err.message || 'No message');
-    console.error('   SQL State:', err.sqlState || 'Unknown');
-    console.error('   Error Number:', err.errno || 'Unknown');
-    console.error('   Stack:', err.stack);
-    
-    // Try alternative connection test
-    console.log('🔄 Trying alternative connection method...');
+  const maxRetries = 3;
+  const retryDelay = 5000; // 5 seconds
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const connection = await db.getConnection();
-      console.log('✅ Alternative connection successful');
-      connection.release();
+      console.log(`🔄 Connection attempt ${attempt}/${maxRetries}...`);
+      
+      // Use a longer timeout for the test query
+      const [results] = await Promise.race([
+        db.execute('SELECT 1 as test, NOW() as timestamp, @@version as mysql_version'),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout after 30 seconds')), 30000)
+        )
+      ]);
+      
+      console.log('✅ Database connection test successful');
+      console.log('📊 Test result:', results[0]);
+      console.log('🔗 MySQL version:', results[0].mysql_version);
       return true;
-    } catch (altErr) {
-      console.error('❌ Alternative connection also failed:', altErr.message);
-      return false;
+      
+    } catch (err) {
+      console.error(`❌ Database connection attempt ${attempt} failed:`);
+      console.error('   Error Code:', err.code || 'Unknown');
+      console.error('   Error Message:', err.message || 'No message');
+      console.error('   SQL State:', err.sqlState || 'Unknown');
+      console.error('   Error Number:', err.errno || 'Unknown');
+      
+      if (attempt < maxRetries) {
+        console.log(`⏳ Waiting ${retryDelay / 1000} seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } else {
+        console.error('❌ All connection attempts failed. Server will continue but database operations may fail.');
+        return false;
+      }
     }
   }
+  
+  return false;
 }
 
 // Run database test
@@ -170,6 +182,27 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Root route for service health checks
+app.get('/', (req, res) => {
+  console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  console.log(`📍 Origin: ${req.headers.origin || 'No Origin'}`);
+  console.log(`📋 User-Agent: ${req.headers['user-agent']?.substring(0, 20)}...`);
+  
+  res.json({
+    service: 'CRM Backend API',
+    status: 'running',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      patients: '/api/patients',
+      staff: '/api/staff',
+      doctors: '/api/doctors',
+      medicines: '/api/medicines'
+    }
+  });
 });
 
 // Add debug endpoint for database connection info

@@ -16,15 +16,10 @@ const db = await mysql.createPool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   // Increased timeouts for remote database connection
   connectTimeout: 60000, // 60 seconds for initial connection
-  acquireTimeout: 60000, // 60 seconds to acquire connection
-  timeout: 60000, // 60 seconds for query timeout
   idleTimeout: 300000, // 5 minutes
   // Keep connection alive settings
   enableKeepAlive: true,
-  keepAliveInitialDelay: 30000, // 30 seconds
-  // Retry configuration
-  reconnect: true,
-  maxReconnects: 3
+  keepAliveInitialDelay: 30000 // 30 seconds
 });
 
 export default db;
