@@ -45,6 +45,10 @@ app.use(cors({
   origin: [
     process.env.VITE_BASE_URL, // Frontend URL from .env
     process.env.VITE_API_URL?.replace('/api', ''), // Backend URL from .env
+    'https://admin.gandhibaideaddictioncenter.com', // Your live Hostinger domain
+    'http://admin.gandhibaideaddictioncenter.com', // HTTP version just in case
+    'https://gandhibaideaddictioncenter.com', // Main domain if needed
+    'http://gandhibaideaddictioncenter.com', // HTTP version
     'http://localhost:8080',
     'http://localhost:3000',
     'http://localhost:5173',
