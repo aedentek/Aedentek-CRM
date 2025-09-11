@@ -187,17 +187,101 @@ router.get('/favicon', async (req, res) => {
   }
 });
 
+// Dedicated logo endpoint to serve sidebar logo from database
+router.get('/logo', async (req, res) => {
+  console.log('🖼️ Sidebar logo requested from database');
+  try {
+    await db.execute('SELECT 1'); // Test connection first
+    console.log('✅ Database connection verified for logo query');
+    
+    const [rows] = await db.execute(
+      'SELECT setting_value, file_path FROM app_settings WHERE setting_key = ?', 
+      ['sidebar_logo']
+    );
+    
+    if (rows.length === 0) {
+      console.log('⚠️ No sidebar logo found in database');
+      return res.json({ 
+        success: false,
+        logoUrl: null,
+        error: 'Logo not found in database',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const logoPath = rows[0].file_path || rows[0].setting_value;
+    
+    if (logoPath) {
+      // Convert Windows paths to web paths
+      const webPath = logoPath.replace(/\\/g, '/');
+      console.log('✅ Logo path from database:', webPath);
+      
+      res.json({ 
+        success: true,
+        logoUrl: webPath,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.log('⚠️ Logo path is empty in database');
+      res.json({ 
+        success: false,
+        logoUrl: null,
+        error: 'Logo path is empty',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error fetching logo from database:', error);
+    res.status(500).json({ 
+      success: false,
+      logoUrl: null,
+      error: 'Failed to fetch logo from database',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 router.get('/settings/:key', async (req, res) => {
   console.log(`🔍 Settings key route hit with key: ${req.params.key}`);
   try {
+    await db.execute('SELECT 1'); // Test connection first
+    console.log('✅ Database connection verified for settings query');
+    
     const [rows] = await db.execute('SELECT * FROM app_settings WHERE setting_key = ?', [req.params.key]);
+    
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Setting not found' });
+      console.log(`⚠️ Setting not found: ${req.params.key}`);
+      return res.status(404).json({ 
+        error: 'Setting not found',
+        key: req.params.key,
+        timestamp: new Date().toISOString()
+      });
     }
-    res.json({ key: rows[0].setting_key, value: rows[0].setting_value });
+    
+    let value = rows[0].setting_value;
+    
+    // Convert Windows paths to web paths if it's a file path
+    if (value && typeof value === 'string' && value.includes('\\')) {
+      value = value.replace(/\\/g, '/');
+    }
+    
+    console.log(`✅ Setting retrieved: ${req.params.key} = ${value}`);
+    res.json({ 
+      key: rows[0].setting_key, 
+      value: value,
+      setting_value: value, // For backward compatibility
+      timestamp: new Date().toISOString()
+    });
   } catch (err) {
-    console.error('Error fetching setting:', err);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Error fetching setting:', err);
+    res.status(500).json({ 
+      error: err.message,
+      key: req.params.key,
+      details: err.code ? `Database error: ${err.code}` : 'Unknown database error',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

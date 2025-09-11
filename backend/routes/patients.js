@@ -670,6 +670,12 @@ router.delete('/patient-call-records/:id', async (req, res) => {
 // Get all patients
 router.get('/patients', async (req, res) => {
   try {
+    console.log('📊 GET /patients requested');
+    
+    // Test database connection first
+    await db.execute('SELECT 1');
+    console.log('✅ Database connection verified for patients query');
+    
     // Simple query without pagination - load all patients for immediate display
     const [rows] = await db.query('SELECT * FROM patients WHERE is_deleted = FALSE ORDER BY created_at DESC');
     
@@ -683,11 +689,21 @@ router.get('/patients', async (req, res) => {
       attenderPan: patient.attenderPan ? patient.attenderPan.replace(/\\/g, '/') : null,
     }));
     
-    console.log(`Retrieved ${rows.length} patients`);
+    console.log(`✅ Retrieved ${rows.length} patients successfully`);
     res.json(normalizedPatients);
   } catch (err) {
-    console.error('Error fetching patients:', err);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Error fetching patients:', err);
+    console.error('❌ Error details:', {
+      code: err.code,
+      errno: err.errno,
+      sqlMessage: err.sqlMessage,
+      sqlState: err.sqlState,
+      stack: err.stack
+    });
+    res.status(500).json({ 
+      error: err.message,
+      details: err.code ? `Database error: ${err.code}` : 'Unknown database error'
+    });
   }
 });
 

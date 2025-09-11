@@ -121,8 +121,8 @@ async function testDatabaseConnection() {
   console.log('👤 DB User:', process.env.DB_USER);
   console.log('🗃️ DB Name:', process.env.DB_NAME);
   
-  const maxRetries = 3;
-  const retryDelay = 5000; // 5 seconds
+  const maxRetries = 5; // Increased retries
+  const retryDelay = 3000; // Reduced delay to 3 seconds
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -132,7 +132,7 @@ async function testDatabaseConnection() {
       const [results] = await Promise.race([
         db.execute('SELECT 1 as test, NOW() as timestamp, @@version as mysql_version'),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout after 30 seconds')), 30000)
+          setTimeout(() => reject(new Error('Connection timeout after 45 seconds')), 45000)
         )
       ]);
       
@@ -161,8 +161,30 @@ async function testDatabaseConnection() {
   return false;
 }
 
-// Run database test
-testDatabaseConnection();
+// Global database connection status
+let isDatabaseConnected = false;
+
+// Middleware to check database connection before handling requests
+const checkDatabaseConnection = async (req, res, next) => {
+  if (!isDatabaseConnected) {
+    try {
+      await db.execute('SELECT 1');
+      isDatabaseConnected = true;
+    } catch (error) {
+      console.error('⚠️ Database connection check failed:', error.message);
+      return res.status(503).json({ 
+        error: 'Database connection not available', 
+        message: 'Please try again in a few moments'
+      });
+    }
+  }
+  next();
+};
+
+// Run database test and set connection status
+testDatabaseConnection().then(connected => {
+  isDatabaseConnected = connected;
+});
 
 // Health check endpoint for debugging
 app.get('/api/health', async (req, res) => {
@@ -216,6 +238,9 @@ app.get('/api/debug/db', (req, res) => {
     environment: process.env.NODE_ENV
   });
 });
+
+// Apply database connection check middleware to all API routes
+app.use('/api', checkDatabaseConnection);
 
 app.use('/api', stock); 
 app.use('/api', medicine); 
