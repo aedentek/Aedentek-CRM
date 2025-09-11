@@ -314,13 +314,15 @@ app.get('/api/favicon', async (req, res) => {
       console.log('✅ Favicon path from database:', faviconPath);
       res.json({ 
         success: true, 
-        faviconPath: faviconPath
+        faviconUrl: faviconPath,
+        timestamp: new Date().toISOString()
       });
     } else {
       console.log('⚠️ No favicon found in database, using default');
       res.json({ 
         success: true, 
-        faviconPath: '/default-favicon.ico'
+        faviconUrl: '/favicon.ico',
+        timestamp: new Date().toISOString()
       });
     }
   } catch (error) {
@@ -328,7 +330,8 @@ app.get('/api/favicon', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to fetch favicon',
-      faviconPath: '/default-favicon.ico'
+      faviconUrl: '/favicon.ico',
+      timestamp: new Date().toISOString()
     });
   }
 });

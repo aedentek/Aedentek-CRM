@@ -7,25 +7,104 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <!-- Favicon links - will be updated dynamically from database -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=initial" />
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=initial" />
-    <!-- Dynamic favicon loading happens in ModernApp.tsx -->
+    <!-- Initial favicon removed to prevent showing default icon -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Early favicon loading script -->
+    <script>
+      // Immediately start loading favicon and logo from database
+      (function() {
+        // Auto-detect API URL based on environment
+        let baseURL;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          // Development environment
+          baseURL = 'http://localhost:4000/api';
+        } else {
+          // Production environment  
+          baseURL = window.location.protocol + '//' + window.location.hostname + '/api';
+        }
+        
+        // Load favicon
+        fetch(baseURL + '/favicon')
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.faviconUrl) {
+              let fullUrl;
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                fullUrl = 'http://localhost:4000' + data.faviconUrl + '?v=' + Date.now();
+              } else {
+                fullUrl = window.location.protocol + '//' + window.location.hostname + data.faviconUrl + '?v=' + Date.now();
+              }
+              
+              // Remove any existing favicon links
+              document.querySelectorAll('link[rel*="icon"]').forEach(link => link.remove());
+              
+              // Add new favicon
+              const favicon = document.createElement('link');
+              favicon.rel = 'icon';
+              favicon.type = 'image/x-icon';
+              favicon.href = fullUrl;
+              document.head.appendChild(favicon);
+              
+              // Add shortcut icon for compatibility
+              const shortcutIcon = document.createElement('link');
+              shortcutIcon.rel = 'shortcut icon';
+              shortcutIcon.type = 'image/x-icon';
+              shortcutIcon.href = fullUrl;
+              document.head.appendChild(shortcutIcon);
+              
+              console.log('🚀 Early favicon loaded:', fullUrl);
+            }
+          })
+          .catch(error => {
+            console.log('⚠️ Early favicon loading failed:', error);
+          });
+          
+        // Load logo and store in sessionStorage for immediate React access
+        fetch(baseURL + '/settings/sidebar_logo')
+          .then(response => response.json())
+          .then(data => {
+            if (data.value || data.setting_value) {
+              let logoPath = data.value || data.setting_value;
+              
+              // Convert absolute Windows path to web-accessible relative path
+              if (logoPath.includes('\\Photos\\settings\\')) {
+                const filename = logoPath.split('\\').pop();
+                logoPath = `/Photos/settings/${filename}`;
+              } else if (!logoPath.startsWith('/')) {
+                logoPath = `/Photos/settings/${logoPath}`;
+              }
+              
+              let fullLogoUrl;
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                fullLogoUrl = 'http://localhost:4000' + logoPath;
+              } else {
+                fullLogoUrl = window.location.protocol + '//' + window.location.hostname + logoPath;
+              }
+              
+              // Store logo URL in sessionStorage for immediate React access
+              sessionStorage.setItem('sidebar_logo_url', fullLogoUrl);
+              sessionStorage.setItem('sidebar_logo_loaded', 'true');
+              
+              console.log('🎨 Early logo loaded and cached:', fullLogoUrl);
+            }
+          })
+          .catch(error => {
+            console.log('⚠️ Early logo loading failed:', error);
+            sessionStorage.setItem('sidebar_logo_loaded', 'false');
+          });
+      })();
+    </script>
+    
     <title>Gandhi Bai</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-    <title>Gandhi Bai</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <meta name="description" content="Gandhi Bai CRM System" />
+    <meta name="author" content="Gandhi Bai" />
 
-    <meta property="og:title" content="healix-suite" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <meta property="og:title" content="Gandhi Bai CRM" />
+    <meta property="og:description" content="Gandhi Bai CRM System" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
 
   <body>

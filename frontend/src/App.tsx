@@ -16,6 +16,8 @@ import './App.css';
 
 import { loadWebsiteSettings } from '@/utils/api';
 import { faviconService } from '@/services/faviconService';
+import { RoutePreloader } from '@/utils/routePreloader';
+import { verifyLazyLoading } from '@/utils/lazyLoadingVerification';
 import AppRoutes from '@/components/AppRoutes';
 
 const queryClient = new QueryClient();
@@ -42,6 +44,14 @@ function App() {
     };
     
     forceFaviconUpdate();
+    
+    // Preload critical routes for better performance
+    RoutePreloader.preloadCriticalRoutes();
+    
+    // Verify lazy loading implementation in development
+    if (import.meta.env.DEV) {
+      setTimeout(() => verifyLazyLoading(), 1000);
+    }
     
     const loadSettings = async () => {
       try {

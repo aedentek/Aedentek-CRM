@@ -9,23 +9,21 @@ export const useFaviconFromDB = (autoRefresh = true) => {
   useEffect(() => {
     const loadFavicon = async () => {
       try {
-        console.log('🎯 Loading favicon from database...');
+        console.log('🎯 Loading favicon from database via React hook...');
         setError(null);
         
-        // Add a small delay to ensure backend is ready
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        // No delay needed since early script already loaded it
         const success = await faviconService.setFaviconFromDB();
         if (success) {
           const url = await faviconService.fetchFaviconFromDB();
           setFaviconUrl(url);
           setFaviconLoaded(true);
-          console.log('✅ Favicon loaded from database successfully');
+          console.log('✅ Favicon loaded from database successfully via React hook');
         } else {
           throw new Error('Failed to set favicon from database');
         }
       } catch (err) {
-        console.error('❌ Error loading favicon from database:', err);
+        console.error('❌ Error loading favicon from database via React hook:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
         setFaviconLoaded(false);
       }

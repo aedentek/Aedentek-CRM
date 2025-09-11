@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUserPermissions, hasPagePermission, filterMenuItemsByPermissions } from '@/utils/permissions';
+import { useLogoFromDB } from '@/hooks/useLogoFromDB';
 
 interface ModernSidebarProps {
   user: { name: string; role: string; email?: string; permissions?: string[] };
@@ -56,6 +57,18 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ user, onLogout, onCollaps
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const location = useLocation();
+  
+  // Get logo from database
+  const { logoLoaded, logoUrl, error: logoError } = useLogoFromDB();
+  
+  // Debug logging for logo loading
+  useEffect(() => {
+    if (logoLoaded && logoUrl) {
+      console.log('🎨 Sidebar logo loaded successfully:', logoUrl);
+    } else if (logoError) {
+      console.warn('🎨 Sidebar logo loading failed:', logoError);
+    }
+  }, [logoLoaded, logoUrl, logoError]);
 
   // Get user permissions on component mount
   useEffect(() => {
@@ -198,7 +211,19 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ user, onLogout, onCollaps
           isCollapsed ? "justify-center" : "space-x-3"
         )}>
           <Avatar className="h-12 w-12 ring-2 ring-white shadow-lg">
-            <AvatarImage src="/api/placeholder/48/48" />
+            {logoLoaded && logoUrl ? (
+              <AvatarImage 
+                src={logoUrl} 
+                alt="Company Logo"
+                className="object-contain p-1 bg-white rounded-full"
+                onError={(e) => {
+                  console.warn('Failed to load logo image, falling back to initials');
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <AvatarImage src="" />
+            )}
             <AvatarFallback className="bg-blue-600 text-white text-lg font-semibold">
               {user.role.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
