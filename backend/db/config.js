@@ -3,30 +3,29 @@ import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });
 
-// Enhanced MySQL connection config with better error handling
+// Enhanced MySQL connection config with valid MySQL2 options only
 const dbConfig = {
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  // Connection Pool Settings (Valid for MySQL2)
   waitForConnections: true,
   connectionLimit: 8, // Reduced for stability on Render
   queueLimit: 0,
+  // SSL Configuration
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Enhanced timeouts for remote database connection
+  // Timeout Settings (Valid for MySQL2)
   connectTimeout: 120000, // 2 minutes for initial connection
-  acquireTimeout: 120000, // 2 minutes to acquire connection
-  idleTimeout: 300000, // 5 minutes idle timeout
-  // Keep connection alive settings for remote hosting
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 30000, // 30 seconds
-  // Retry logic
-  reconnect: true,
-  maxReconnects: 5,
-  // Additional stability settings
+  timeout: 120000, // Query timeout
+  // Connection Settings
   multipleStatements: false,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  // Additional MySQL2 valid options
+  dateStrings: true,
+  supportBigNumbers: true,
+  bigNumberStrings: true
 };
 
 console.log('🔧 Database configuration initialized for:', process.env.DB_HOST);
