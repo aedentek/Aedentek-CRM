@@ -20,8 +20,8 @@
           // Development environment
           baseURL = 'http://localhost:4000/api';
         } else {
-          // Production environment  
-          baseURL = window.location.protocol + '//' + window.location.hostname + '/api';
+          // Production environment - use Render backend API
+          baseURL = 'https://crm-czuu.onrender.com/api';
         }
         
         // Load favicon
@@ -33,7 +33,7 @@
               if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 fullUrl = 'http://localhost:4000' + data.faviconUrl + '?v=' + Date.now();
               } else {
-                fullUrl = window.location.protocol + '//' + window.location.hostname + data.faviconUrl + '?v=' + Date.now();
+                fullUrl = 'https://crm-czuu.onrender.com' + data.faviconUrl + '?v=' + Date.now();
               }
               
               // Remove any existing favicon links
@@ -79,7 +79,7 @@
               if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 fullLogoUrl = 'http://localhost:4000' + logoPath;
               } else {
-                fullLogoUrl = window.location.protocol + '//' + window.location.hostname + logoPath;
+                fullLogoUrl = 'https://crm-czuu.onrender.com' + logoPath;
               }
               
               // Store logo URL in sessionStorage for immediate React access
