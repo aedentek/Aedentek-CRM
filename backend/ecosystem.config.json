@@ -1,0 +1,29 @@
+{
+  "apps": [{
+    "name": "crm-backend",
+    "script": "index.js",
+    "cwd": "/var/www/CRM/backend",
+    "instances": 1,
+    "exec_mode": "cluster",
+    "env": {
+      "NODE_ENV": "production",
+      "PORT": "4000"
+    },
+    "env_production": {
+      "NODE_ENV": "production",
+      "PORT": "4000"
+    },
+    "log_file": "/var/log/pm2/crm-backend.log",
+    "error_file": "/var/log/pm2/crm-backend-error.log",
+    "out_file": "/var/log/pm2/crm-backend-out.log",
+    "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+    "merge_logs": true,
+    "max_memory_restart": "1G",
+    "restart_delay": 4000,
+    "watch": false,
+    "ignore_watch": ["node_modules", "uploads", "Photos"],
+    "autorestart": true,
+    "max_restarts": 5,
+    "min_uptime": "10s"
+  }]
+}

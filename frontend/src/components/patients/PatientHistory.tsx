@@ -132,6 +132,10 @@ const PatientHistory: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0); // For main page refresh
   const [isUpdatingRecords, setIsUpdatingRecords] = useState(false); // Track when updating
   
+  // Backend pagination state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
+  
   // Loading states for better UX
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
@@ -215,17 +219,13 @@ const PatientHistory: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load all data in parallel for better performance
-        const [patientsResult, doctorsResult, historyResult] = await Promise.allSettled([
-          loadPatients(),
+        // Load doctors and history in parallel, patients will be loaded separately with pagination
+        const [doctorsResult, historyResult] = await Promise.allSettled([
           loadDoctors(),
           loadHistoryRecords()
         ]);
         
         // Handle any failed promises
-        if (patientsResult.status === 'rejected') {
-          console.error('Failed to load patients:', patientsResult.reason);
-        }
         if (doctorsResult.status === 'rejected') {
           console.error('Failed to load doctors:', doctorsResult.reason);
         }
@@ -242,10 +242,17 @@ const PatientHistory: React.FC = () => {
     loadData();
   }, [refreshKey]);
 
-  // Reset to first page when filter changes
+  // Load patients with backend pagination when page or search changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterMonth, filterYear]);
+    loadPatients();
+  }, [currentPage, searchTerm]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm]);
 
   // Reload medical records when refreshCounter changes (after form submission)
   useEffect(() => {
@@ -257,93 +264,138 @@ const PatientHistory: React.FC = () => {
   const loadPatients = async () => {
     setIsLoadingPatients(true);
     try {
-      console.log('Attempting to load patients from DatabaseService...');
-      const data = await DatabaseService.getAllPatients();
-      console.log('Patients data received:', data);
-      
-      // Use the same parsing logic as PatientList component to ensure consistency
-      const parsedPatients = data.map((p: any) => {
-        // Safely parse dates with validation - use created_at as fallback for admission date
-        const parseDate = (dateValue: any) => {
-          if (!dateValue) return null;
-          const parsedDate = new Date(dateValue);
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        };
-        
-        // Get admission date with fallback to created_at
-        const getAdmissionDate = (p: any) => {
-          return parseDate(p.admissionDate || p.admission_date) || parseDate(p.created_at) || null;
-        };
-        // Format ID as string and ensure it exists
-        const patientId = p.id ? String(p.id) : '';
-        return {
-          id: patientId,
-          name: p.name,
-          age: parseInt(p.age) || 0,
-          gender: p.gender,
-          phone: p.phone,
-          email: p.email || '',
-          address: p.address,
-          emergencyContact: p.emergency_contact || '',
-          medicalHistory: p.medical_history || '',
-          admissionDate: getAdmissionDate(p),
-          status: p.status || 'Active',
-          attenderName: p.attender_name || '',
-          attenderPhone: p.attender_phone || '',
-          photo: p.photo || '',
-          photoUrl: p.photoUrl || p.photo_url || '',
-          fees: parseFloat(p.fees) || 0,
-          bloodTest: parseFloat(p.blood_test) || 0,
-          pickupCharge: parseFloat(p.pickup_charge) || 0,
-          totalAmount: parseFloat(p.total_amount) || 0,
-          payAmount: parseFloat(p.pay_amount) || 0,
-          balance: parseFloat(p.balance) || 0,
-          paymentType: p.payment_type || '',
-          fatherName: p.father_name || '',
-          motherName: p.mother_name || '',
-          attenderRelationship: p.attender_relationship || '',
-          dateOfBirth: parseDate(p.date_of_birth),
-          marriageStatus: p.marriage_status || '',
-          employeeStatus: p.employee_status || '',
-          created_at: parseDate(p.created_at),
-          createdAt: parseDate(p.created_at)
-        };
+      console.log('🔗 Loading patients with backend pagination...', {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm
       });
       
-      // Map to the format needed for PatientHistory
-      const mappedPatients = parsedPatients.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        age: p.age,
-        gender: p.gender,
-        phone: p.phone,
-        email: p.email,
-        address: p.address,
-        emergencyContact: p.emergencyContact,
-        medicalHistory: p.medicalHistory,
-        admissionDate: p.admissionDate,
-        status: p.status,
-        attenderName: p.attenderName,
-        attenderPhone: p.attenderPhone,
-        photo: p.photo,
-        photoUrl: p.photoUrl,
-        fees: p.fees,
-        bloodTest: p.bloodTest,
-        pickupCharge: p.pickupCharge,
-        totalAmount: p.totalAmount,
-        payAmount: p.payAmount,
-        balance: p.balance,
-        paymentType: p.paymentType,
-        fatherName: p.fatherName,
-        motherName: p.motherName,
-        attenderRelationship: p.attenderRelationship,
-        dateOfBirth: p.dateOfBirth,
-        marriageStatus: p.marriageStatus,
-        employeeStatus: p.employeeStatus
-      }));
+      // Build pagination parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString()
+      });
       
-      setPatients(mappedPatients);
-      console.log('Mapped patients with sample data:', mappedPatients);
+      // Add search if provided
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      
+      // Make direct API call with pagination
+      const apiUrl = `${import.meta.env.VITE_API_URL}/patients?${params.toString()}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Backend pagination response:', data);
+      
+      // Extract patient array and pagination metadata
+      if (data && Array.isArray(data.data)) {
+        // Backend pagination response format
+        const patients_array = data.data;
+        const pagination = data.pagination || {};
+        setTotalPages(pagination.pages || 1);
+        setTotalPatients(parseInt(pagination.total) || 0);
+        console.log('📊 Pagination metadata:', pagination);
+      
+        // Use the same parsing logic as PatientList component to ensure consistency
+        const parsedPatients = patients_array.map((p: any) => {
+          // Safely parse dates with validation - use created_at as fallback for admission date
+          const parseDate = (dateValue: any) => {
+            if (!dateValue) return null;
+            const parsedDate = new Date(dateValue);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+          };
+          
+          // Get admission date with fallback to created_at
+          const getAdmissionDate = (p: any) => {
+            return parseDate(p.admissionDate || p.admission_date) || parseDate(p.created_at) || null;
+          };
+          
+          // Format ID as string and ensure it exists
+          const patientId = p.id ? String(p.id) : '';
+          return {
+            id: patientId,
+            name: p.name,
+            age: parseInt(p.age) || 0,
+            gender: p.gender,
+            phone: p.phone,
+            email: p.email || '',
+            address: p.address,
+            emergencyContact: p.emergency_contact || '',
+            medicalHistory: p.medical_history || '',
+            admissionDate: getAdmissionDate(p),
+            status: p.status || 'Active',
+            attenderName: p.attender_name || '',
+            attenderPhone: p.attender_phone || '',
+            photo: p.photo || '',
+            photoUrl: p.photoUrl || p.photo_url || '',
+            fees: parseFloat(p.fees) || 0,
+            bloodTest: parseFloat(p.blood_test) || 0,
+            pickupCharge: parseFloat(p.pickup_charge) || 0,
+            totalAmount: parseFloat(p.total_amount) || 0,
+            payAmount: parseFloat(p.pay_amount) || 0,
+            balance: parseFloat(p.balance) || 0,
+            paymentType: p.payment_type || '',
+            fatherName: p.father_name || '',
+            motherName: p.mother_name || '',
+            attenderRelationship: p.attender_relationship || '',
+            dateOfBirth: parseDate(p.date_of_birth),
+            marriageStatus: p.marriage_status || '',
+            employeeStatus: p.employee_status || '',
+            created_at: parseDate(p.created_at),
+            createdAt: parseDate(p.created_at)
+          };
+        });
+        
+        // Map to the format needed for PatientHistory
+        const mappedPatients = parsedPatients.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          age: p.age,
+          gender: p.gender,
+          phone: p.phone,
+          email: p.email,
+          address: p.address,
+          emergencyContact: p.emergencyContact,
+          medicalHistory: p.medicalHistory,
+          admissionDate: p.admissionDate,
+          status: p.status,
+          attenderName: p.attenderName,
+          attenderPhone: p.attenderPhone,
+          photo: p.photo,
+          photoUrl: p.photoUrl,
+          fees: p.fees,
+          bloodTest: p.bloodTest,
+          pickupCharge: p.pickupCharge,
+          totalAmount: p.totalAmount,
+          payAmount: p.payAmount,
+          balance: p.balance,
+          paymentType: p.paymentType,
+          fatherName: p.fatherName,
+          motherName: p.motherName,
+          attenderRelationship: p.attenderRelationship,
+          dateOfBirth: p.dateOfBirth,
+          marriageStatus: p.marriageStatus,
+          employeeStatus: p.employeeStatus
+        }));
+        
+        setPatients(mappedPatients);
+        console.log('Mapped patients with backend pagination:', mappedPatients);
+      } else {
+        console.warn('⚠️ Invalid patient data received:', data);
+        setPatients([]);
+        setTotalPages(1);
+        setTotalPatients(0);
+        toast({
+          title: "Warning",
+          description: "No patient data received from server",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error('Error loading patients:', error);
       
@@ -383,6 +435,8 @@ const PatientHistory: React.FC = () => {
           }));
           
           setPatients(parsedPatients);
+          setTotalPages(Math.ceil(parsedPatients.length / itemsPerPage));
+          setTotalPatients(parsedPatients.length);
           toast({
             title: "Using Local Data",
             description: "Loaded patients from local storage due to database connection issue",
@@ -396,6 +450,8 @@ const PatientHistory: React.FC = () => {
       
       // If no data available, set empty array
       setPatients([]);
+      setTotalPages(1);
+      setTotalPatients(0);
       
       toast({
         title: "Error",
@@ -755,11 +811,6 @@ const PatientHistory: React.FC = () => {
 
     return Array.from(uniquePatients.values());
   }, [historyRecords, patients, searchTerm, filterMonth, filterYear]);
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
 
   // Recording functions
   const startRecording = async () => {
@@ -1957,10 +2008,10 @@ const PatientHistory: React.FC = () => {
           )}
 
           {/* Pagination */}
-          {filteredRecords.length > itemsPerPage && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredRecords.length)} of {filteredRecords.length} records
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalPatients)} of {totalPatients} patients
               </p>
               <div className="flex items-center space-x-2">
                 <Button

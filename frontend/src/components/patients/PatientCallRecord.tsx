@@ -68,6 +68,12 @@ const PatientCallRecord: React.FC = () => {
   const [records, setRecords] = useState<CallRecord[]>([]);
   const [callRecords, setCallRecords] = useState<CallRecord[]>([]); // Store actual call records from database
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Backend pagination state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [statusFilter, setStatusFilter] = useState('all');
+  
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isUpdatingRecords, setIsUpdatingRecords] = useState(false);
   
@@ -123,6 +129,13 @@ const PatientCallRecord: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterMonth, filterYear]);
+
+  // Load patients when pagination parameters change
+  useEffect(() => {
+    if (patients.length > 0 || currentPage > 1) { // Only reload if we have patients or not on first page
+      loadPatients();
+    }
+  }, [currentPage, searchTerm, statusFilter]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -279,8 +292,8 @@ const PatientCallRecord: React.FC = () => {
     return filtered;
   }, [records, patients, searchTerm, filterMonth, filterYear]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+  // Pagination calculations for call records
+  const totalRecordPages = Math.ceil(filteredRecords.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
 
@@ -317,37 +330,43 @@ const PatientCallRecord: React.FC = () => {
   const loadPatients = async () => {
     setIsLoadingPatients(true);
     try {
-      console.log('Loading patients from DatabaseService...');
-      const data = await DatabaseService.getAllPatients();
+      const patientsPerPage = 10; // Define this locally for patient pagination
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: patientsPerPage.toString(),
+      });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+
+      console.log('Loading patients with pagination...');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patients?${params}`);
       
-      // Use the same parsing logic as PatientHistory component to ensure consistency
-      const parsedPatients = data.map((p: any) => {
-        // Safely parse dates with validation - use created_at as fallback for admission date
-        const parseDate = (dateValue: any) => {
-          if (!dateValue) return null;
-          const parsedDate = new Date(dateValue);
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        };
-        
-        // Get admission date with fallback to created_at
-        const getAdmissionDate = (p: any) => {
-          return parseDate(p.admissionDate || p.admission_date) || parseDate(p.created_at) || null;
-        };
-        
-        // Format ID as string and ensure it exists
-        const patientId = p.id ? String(p.id) : '';
-        return {
-          id: patientId,
+      if (!response.ok) {
+        throw new Error('Failed to load patients');
+      }
+
+      const data = await response.json();
+      console.log('Patients loaded:', data.data?.length || 0);
+      
+      if (data.data) {
+        const formattedPatients = data.data.map((p: any) => ({
+          id: p.id.toString(),
           name: p.name,
           age: parseInt(p.age) || 0,
-          gender: p.gender,
-          phone: p.phone,
+          gender: p.gender || '',
+          phone: p.phone || p.contactNumber || '',
           email: p.email || '',
-          address: p.address,
+          address: p.address || '',
           emergencyContact: p.emergency_contact || '',
           medicalHistory: p.medical_history || '',
-          admissionDate: getAdmissionDate(p),
-          status: p.status || 'Active', // Default to 'Active' like PatientHistory
+          admissionDate: p.admissionDate ? new Date(p.admissionDate) : null,
+          status: p.status || 'Active',
           attenderName: p.attender_name || '',
           attenderPhone: p.attender_phone || '',
           photo: p.photo || '',
@@ -361,31 +380,39 @@ const PatientCallRecord: React.FC = () => {
           fatherName: p.father_name || '',
           motherName: p.mother_name || '',
           attenderRelationship: p.attender_relationship || '',
-          dateOfBirth: parseDate(p.date_of_birth),
+          dateOfBirth: p.date_of_birth ? new Date(p.date_of_birth) : null,
           marriageStatus: p.marriage_status || '',
           employeeStatus: p.employee_status || '',
-          created_at: parseDate(p.created_at),
-          createdAt: parseDate(p.created_at),
+          created_at: p.created_at ? new Date(p.created_at) : null,
+          createdAt: p.created_at ? new Date(p.created_at) : null,
           // Additional fields for call record compatibility
-          contactNumber: p.contact_number || p.phone || '',
+          contactNumber: p.contactNumber || p.phone || '',
           locality: p.locality || '',
           city: p.city || '',
-          bloodGroup: p.blood_group || '',
+          bloodGroup: p.bloodGroup || '',
           occupation: p.occupation || '',
           guardian: p.guardian || '',
-          guardianPhone: p.guardian_phone || '',
-          referredBy: p.referred_by || '',
+          guardianPhone: p.guardianPhone || '',
+          referredBy: p.referredBy || '',
           uhid: p.uhid || '',
-          photoUrl: p.photo_url || ''
-        };
-      });
-      
-      setPatients(parsedPatients);
-      console.log('Patients loaded successfully:', parsedPatients.length);
+          photoUrl: p.photoUrl || ''
+        }));
+        
+        setPatients(formattedPatients);
+        setTotalPatients(data.total || 0);
+        setTotalPages(Math.ceil((data.total || 0) / patientsPerPage));
+        
+        return formattedPatients; // Return the data for immediate use
+      } else {
+        setPatients([]);
+        setTotalPatients(0);
+        setTotalPages(1);
+        return [];
+      }
     } catch (error) {
       console.error('Error loading patients:', error);
       
-      // Fallback: Try to load from localStorage as backup (same as PatientHistory)
+      // Fallback: Try to load from localStorage as backup
       const stored = localStorage.getItem('patients');
       if (stored) {
         try {
@@ -399,7 +426,7 @@ const PatientCallRecord: React.FC = () => {
             address: p.address || '',
             emergencyContact: p.emergencyContact || '',
             medicalHistory: p.medicalHistory || '',
-            admissionDate: p.admissionDate ? new Date(p.admissionDate) : undefined,
+            admissionDate: p.admissionDate ? new Date(p.admissionDate) : null,
             status: p.status || 'Active',
             attenderName: p.attenderName || '',
             attenderPhone: p.attenderPhone || '',
@@ -414,10 +441,10 @@ const PatientCallRecord: React.FC = () => {
             fatherName: p.fatherName || '',
             motherName: p.motherName || '',
             attenderRelationship: p.attenderRelationship || '',
-            dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth) : new Date(),
+            dateOfBirth: p.dateOfBirth ? new Date(p.dateOfBirth) : null,
             marriageStatus: p.marriageStatus || '',
             employeeStatus: p.employeeStatus || '',
-            contactNumber: p.contactNumber || p.phone || '',
+            contactNumber: p.contactNumber || '',
             locality: p.locality || '',
             city: p.city || '',
             bloodGroup: p.bloodGroup || '',
@@ -435,7 +462,7 @@ const PatientCallRecord: React.FC = () => {
             description: "Loaded patients from local storage due to database connection issue",
             variant: "default",
           });
-          return;
+          return parsedPatients;
         } catch (e) {
           console.error('Failed to parse local storage patients:', e);
         }
@@ -449,6 +476,7 @@ const PatientCallRecord: React.FC = () => {
         description: `Failed to load patients: ${error}. No patient data available.`,
         variant: "destructive",
       });
+      return [];
     } finally {
       setIsLoadingPatients(false);
     }
@@ -497,24 +525,23 @@ const PatientCallRecord: React.FC = () => {
       // Store the actual call records separately for the view popup
       setCallRecords(mappedCallRecords);
 
-      // Get patients data efficiently - use current state if available, otherwise fetch fresh
+      // Get patients data efficiently - use current state if available, otherwise fetch from API
       let allPatients = patients;
       if (allPatients.length === 0) {
         try {
-          const data = await DatabaseService.getAllPatients();
-          allPatients = data.map((p: any) => {
-            const parseDate = (dateValue: any) => {
-              if (!dateValue) return null;
-              const parsedDate = new Date(dateValue);
-              return isNaN(parsedDate.getTime()) ? null : parsedDate;
-            };
-            return {
+          // Use backend pagination API to get all patients
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/patients?limit=1000`); // Get more patients for call record processing
+          if (response.ok) {
+            const data = await response.json();
+            allPatients = (data.data || []).map((p: any) => ({
               id: p.id,
               name: p.name,
-              admissionDate: parseDate(p.admissionDate || p.admission_date || p.created_at),
-              status: p.status || 'Active' // Default to 'Active' like PatientHistory
-            };
-          });
+              admissionDate: p.admissionDate ? new Date(p.admissionDate) : null,
+              status: p.status || 'Active'
+            }));
+          } else {
+            throw new Error('Failed to fetch patients from API');
+          }
         } catch (error) {
           console.error('Error loading patients for call records:', error);
           allPatients = [];
@@ -1378,9 +1405,9 @@ const PatientCallRecord: React.FC = () => {
                 >
                   Previous
                 </Button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, totalRecordPages) }, (_, i) => {
                   const pageNumber = i + Math.max(1, currentPage - 2);
-                  if (pageNumber > totalPages) return null;
+                  if (pageNumber > totalRecordPages) return null;
                   return (
                     <Button
                       key={pageNumber}
@@ -1396,8 +1423,8 @@ const PatientCallRecord: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalRecordPages, currentPage + 1))}
+                  disabled={currentPage === totalRecordPages}
                 >
                   Next
                 </Button>
@@ -2142,9 +2169,9 @@ const PatientCallRecord: React.FC = () => {
                 <div className="text-sm text-red-800">
                   <p className="font-medium mb-2">?? This will permanently delete:</p>
                   <ul className="text-xs space-y-1">
-                    <li>• Call record details and description</li>
-                    <li>• Associated audio recordings</li>
-                    <li>• All related metadata</li>
+                    <li>ï¿½ Call record details and description</li>
+                    <li>ï¿½ Associated audio recordings</li>
+                    <li>ï¿½ All related metadata</li>
                   </ul>
                 </div>
               </div>

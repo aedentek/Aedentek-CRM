@@ -49,6 +49,8 @@ app.use(cors({
     'http://admin.gandhibaideaddictioncenter.com', // HTTP version just in case
     'https://gandhibaideaddictioncenter.com', // Main domain if needed
     'http://gandhibaideaddictioncenter.com', // HTTP version
+    'https://api.gandhibaideaddictioncenter.com', // VPS API domain
+    'http://api.gandhibaideaddictioncenter.com', // HTTP version of API domain
     'http://localhost:8080',
     'http://localhost:3000',
     'http://localhost:5173',

@@ -309,7 +309,9 @@ export class DatabaseService {
   static async getAllPatients() {
     const res = await fetch(`${this.apiBaseUrl}/patients`);
     if (!res.ok) throw new Error('Failed to fetch patients');
-    return res.json();
+    const response = await res.json();
+    // Handle pagination response format - extract data array
+    return response.data || response;
   }
   static async getPatient(id: string | number) {
     const res = await fetch(`${this.apiBaseUrl}/patients/${id}`);

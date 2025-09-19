@@ -43,9 +43,12 @@ const PatientAttendance: React.FC = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<PatientAttendance[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Backend pagination state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
 
   // Month and year state for filtering
   const months = [
@@ -64,54 +67,67 @@ const PatientAttendance: React.FC = () => {
     setCurrentPage(1);
   }, []);
 
+  // Load patients when page, search term changes
   useEffect(() => {
     loadPatients();
+  }, [currentPage, searchTerm]);
+
+  // Load attendance records when selected date changes
+  useEffect(() => {
     loadAttendanceRecords();
   }, [selectedDate]);
 
+  // Reset to first page when search term changes
   useEffect(() => {
-    filterPatients();
-  }, [patients, searchTerm]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, patients]);
-
-  // Ensure we stay on first page when data changes
-  useEffect(() => {
-    if (filteredPatients.length > 0) {
+    if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [filteredPatients.length]);
-
-  const filterPatients = () => {
-    let filtered = patients;
-    if (searchTerm) {
-      filtered = patients.filter(patient =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.patient_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.phone.includes(searchTerm)
-      );
-    }
-    
-    // Sort patients by ID in ascending order
-    filtered.sort((a, b) => {
-      const getNum = (id: string) => {
-        if (!id) return 0;
-        const match = id.match(/P(\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-      };
-      return getNum(a.patient_id) - getNum(b.patient_id);
-    });
-    
-    setFilteredPatients(filtered);
-  };
+  }, [searchTerm]);
 
   const loadPatients = async () => {
     try {
-      const data = await DatabaseService.getAllPatients();
-      setPatients(data);
-      setCurrentPage(1); // Ensure we start from the first page
+      console.log('🔗 Loading patients with backend pagination...', {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm
+      });
+      
+      // Build pagination parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString()
+      });
+      
+      // Add search if provided
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      
+      // Make direct API call with pagination
+      const apiUrl = `${import.meta.env.VITE_API_URL}/patients?${params.toString()}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Backend pagination response:', data);
+      
+      // Extract patient array and pagination metadata
+      if (data && Array.isArray(data.data)) {
+        // Backend pagination response format
+        setPatients(data.data);
+        const pagination = data.pagination || {};
+        setTotalPages(pagination.pages || 1);
+        setTotalPatients(parseInt(pagination.total) || 0);
+        console.log('📊 Pagination metadata:', pagination);
+      } else {
+        console.warn('⚠️ Invalid patient data received:', data);
+        setPatients([]);
+        setTotalPages(1);
+        setTotalPatients(0);
+      }
     } catch (error) {
       console.error('Error loading patients:', error);
       toast({
@@ -301,12 +317,6 @@ const PatientAttendance: React.FC = () => {
       description: `Patient attendance for ${format(exportDate, 'MMMM yyyy')} exported to CSV file`,
     });
   };
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPatients = filteredPatients.slice(startIndex, endIndex);
 
   const getAttendanceStats = () => {
     if (patients.length === 0) {
@@ -539,7 +549,7 @@ const PatientAttendance: React.FC = () => {
               </CardTitle>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <Clock className="w-4 h-4" />
-                <span>{filteredPatients.length} patients</span>
+                <span>{totalPatients} patients</span>
               </div>
             </div>
           </CardHeader>
@@ -600,12 +610,12 @@ const PatientAttendance: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentPatients.length > 0 ? (
-                      currentPatients.map((patient, idx) => {
+                    {patients.length > 0 ? (
+                      patients.map((patient, idx) => {
                         const attendance = getAttendanceForDate(patient.id, selectedDate);
                         return (
                           <TableRow key={patient.patient_id} className="bg-white border-b hover:bg-gray-50 transition-colors">
-                            <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{startIndex + idx + 1}</TableCell>
+                            <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{(currentPage - 1) * itemsPerPage + idx + 1}</TableCell>
                             <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center">
                               <PatientPhoto 
                                 photoPath={patient.photo} 
@@ -705,7 +715,7 @@ const PatientAttendance: React.FC = () => {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between p-4 border-t border-gray-100">
                     <p className="text-sm text-gray-600">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredPatients.length)} of {filteredPatients.length} patients
+                      Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalPatients)} of {totalPatients} patients
                     </p>
                     <div className="flex items-center space-x-2">
                       <Button

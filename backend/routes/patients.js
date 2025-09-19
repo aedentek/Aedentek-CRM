@@ -676,10 +676,44 @@ router.get('/patients', async (req, res) => {
     await db.execute('SELECT 1');
     console.log('✅ Database connection verified for patients query');
     
-    // Simple query without pagination - load all patients for immediate display
-    const [rows] = await db.query('SELECT * FROM patients WHERE is_deleted = FALSE ORDER BY created_at DESC');
+    // Get pagination and filter parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const status = req.query.status || '';
     
-    // Normalize photo paths for web use (convert backslashes to forward slashes)
+    console.log('📋 Query parameters:', { page, limit, search, status });
+    
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Build WHERE clause
+    let whereClause = 'WHERE is_deleted = FALSE';
+    const queryParams = [];
+    
+    // Add search filter
+    if (search) {
+      whereClause += ' AND (name LIKE ? OR phone LIKE ? OR email LIKE ? OR address LIKE ?)';
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    
+    // Add status filter
+    if (status && status !== 'All') {
+      whereClause += ' AND status = ?';
+      queryParams.push(status);
+    }
+    
+    // Get total count for pagination
+    const countQuery = `SELECT COUNT(*) as total FROM patients ${whereClause}`;
+    const [countResult] = await db.query(countQuery, queryParams);
+    const total = countResult[0].total;
+    
+    // Get paginated patients
+    const patientsQuery = `SELECT * FROM patients ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const [rows] = await db.query(patientsQuery, [...queryParams, limit, offset]);
+    
+    // Normalize photo paths for web use
     const normalizedPatients = rows.map(patient => ({
       ...patient,
       photo: patient.photo ? patient.photo.replace(/\\/g, '/') : null,
@@ -689,8 +723,16 @@ router.get('/patients', async (req, res) => {
       attenderPan: patient.attenderPan ? patient.attenderPan.replace(/\\/g, '/') : null,
     }));
     
-    console.log(`✅ Retrieved ${rows.length} patients successfully`);
-    res.json(normalizedPatients);
+    console.log(`✅ Retrieved ${rows.length} patients (page ${page}, total: ${total})`);
+    
+    // Return paginated response
+    res.json({
+      data: normalizedPatients,
+      total: total,
+      page: page,
+      limit: limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
     console.error('❌ Error fetching patients:', err);
     console.error('❌ Error details:', {

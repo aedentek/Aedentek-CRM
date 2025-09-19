@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DatabaseService } from '@/services/databaseService';
+// import { DatabaseService } from '@/services/databaseService'; // REMOVED - using backend API
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,17 +54,26 @@ interface TestReport {
 }
 
 const TestReportAmount: React.FC = () => {
+  console.log('🚀 [LATEST CODE] TestReportAmount component loaded at', new Date().toISOString());
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [testReports, setTestReports] = useState<TestReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Active');
+  const [statusFilter, setStatusFilter] = useState('All');
+  
+  // Backend pagination state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
+  
+  // Force re-render trigger
+  const [forceUpdateCount, setForceUpdateCount] = useState(0);
+  const forceRerender = () => setForceUpdateCount(prev => prev + 1);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const itemsPerPage = 10;
   
   // Add Test Report Modal
   const [isAddTestReportOpen, setIsAddTestReportOpen] = useState(false);
@@ -100,10 +109,20 @@ const TestReportAmount: React.FC = () => {
     loadTestReports();
   }, []);
 
+  // Reload data when pagination or filters change  
   useEffect(() => {
-    filterPatients();
-    setCurrentPage(1);
-  }, [patients, searchTerm, statusFilter]);
+    if (currentPage > 1 || searchTerm || (statusFilter && statusFilter !== 'All')) {
+      loadPatients();
+    }
+  }, [currentPage, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    console.log('🔄 Patients state updated:', patients.length, 'patients');
+    console.log('🔄 Setting filteredPatients to:', patients);
+    // For backend pagination, we directly set filteredPatients to patients since filtering is done by backend
+    setFilteredPatients(patients);
+    console.log('🔄 filteredPatients should now be:', patients.length, 'items');
+  }, [patients]);
 
   const formatPatientId = (id: string | number): string => {
     if (!id) return '';
@@ -115,33 +134,73 @@ const TestReportAmount: React.FC = () => {
   const loadPatients = async () => {
     try {
       setLoading(true);
-      console.log('🔗 Loading patients for Test Report Amount...');
+      console.log('🔗 [NEW CODE 2025-09-15 07:20] Loading patients with backend pagination...', {
+        currentPage,
+        searchTerm,
+        statusFilter,
+        itemsPerPage
+      });
       
-      const data = await DatabaseService.getAllPatients();
-      console.log('📋 Patients loaded:', data.length);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+      });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      if (statusFilter && statusFilter !== 'All') {
+        params.append('status', statusFilter);
+      }
+
+      const apiUrl = `${import.meta.env.VITE_API_URL}/patients?${params}`;
+      console.log('🌐 API URL:', apiUrl);
       
-      const formattedPatients = data.map((p: any) => ({
-        ...p,
-        id: p.id || p.originalId,
-        originalId: p.originalId || p.id,
-        name: p.name || '',
-        age: p.age || 0,
-        gender: p.gender || '',
-        phone: p.phone || '',
-        email: p.email || '',
-        address: p.address || '',
-        status: p.status || 'Active',
-        admissionDate: p.admissionDate || p.admission_date || '',
-        photo: p.photo || '',
-        fees: Number(p.fees || p.monthlyFees || 0),
-        bloodTest: Number(p.bloodTest || p.blood_test || 0),
-        pickupCharge: Number(p.pickupCharge || p.pickup_charge || 0),
-        otherFees: Number(p.otherFees || p.other_fees || 0),
-        balance: Number(p.balance || 0)
-      }));
+      const response = await fetch(apiUrl);
       
-      setPatients(formattedPatients);
-      console.log('✅ Patients formatted and set');
+      if (!response.ok) {
+        throw new Error('Failed to load patients');
+      }
+
+      const data = await response.json();
+      console.log('📋 [DEBUG] Raw API Response:', JSON.stringify(data, null, 2));
+      console.log('📋 [DEBUG] Response type:', typeof data);
+      console.log('📋 [DEBUG] Is data an array?', Array.isArray(data));
+      console.log('📋 [DEBUG] data.data exists?', !!data.data);
+      console.log('📋 [DEBUG] data.data is array?', Array.isArray(data.data));
+      console.log('📋 [DEBUG] data.data length:', data.data?.length);
+      
+      if (data && Array.isArray(data.data)) {
+        console.log('✅ [DEBUG] Valid data.data array found with', data.data.length, 'items');
+        
+        // Our backend returns: {data: [...], total: "6", page: 1, limit: 10, totalPages: 1}
+        const totalCount = parseInt(data.total) || parseInt(data.totalPatients) || data.data.length || 0;
+        const pageCount = parseInt(data.totalPages) || Math.ceil(totalCount / itemsPerPage) || 1;
+        
+        console.log('✅ [DEBUG] Calculated:', { totalCount, pageCount });
+        
+        setPatients(data.data);
+        setTotalPatients(totalCount);
+        setTotalPages(pageCount);
+        
+        console.log('✅ [DEBUG] State set successfully');
+        
+        return data.data;
+      } else if (Array.isArray(data)) {
+        console.log('✅ [DEBUG] Legacy array format detected');
+        // Fallback: direct array response
+        setPatients(data);
+        setTotalPatients(data.length);
+        setTotalPages(1);
+        return data; // Return the data for immediate use
+      } else {
+        console.log('❌ No data.data found, setting empty array');
+        setPatients([]);
+        setTotalPatients(0);
+        setTotalPages(1);
+        return [];
+      }
     } catch (error) {
       console.error('❌ Error loading patients:', error);
       toast({
@@ -149,6 +208,8 @@ const TestReportAmount: React.FC = () => {
         description: "Failed to load patients. Please try again.",
         variant: "destructive",
       });
+      setPatients([]);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -559,12 +620,8 @@ const TestReportAmount: React.FC = () => {
     }
   };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredPatients.length / pageSize);
-  const paginatedPatients = filteredPatients.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // Since we're using backend pagination, render patients directly without client-side slicing
+  const displayedPatients = filteredPatients;
 
   const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
   const handleNextPage = () => setCurrentPage(p => Math.min(totalPages, p + 1));
@@ -572,6 +629,17 @@ const TestReportAmount: React.FC = () => {
   if (loading) {
     return <LoadingScreen message="Loading test report data..." />;
   }
+
+  // Debug states at render time
+  console.log('🎯 [RENDER] Current state:', {
+    patients: patients.length,
+    filteredPatients: filteredPatients.length,
+    totalPatients,
+    totalPages,
+    loading,
+    searchTerm,
+    statusFilter
+  });
 
   return (
     <div className="crm-page-bg">
@@ -786,10 +854,10 @@ const TestReportAmount: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedPatients.map((patient, idx) => (
+                {displayedPatients.map((patient, idx) => (
                   <TableRow key={patient.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">
-                      {(currentPage - 1) * pageSize + idx + 1}
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
                     </TableCell>
                     <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 font-medium text-center text-xs sm:text-sm whitespace-nowrap">
                       <span className="text-primary font-medium">
@@ -871,7 +939,7 @@ const TestReportAmount: React.FC = () => {
           {totalPages > 1 && (
             <div className="crm-pagination-container">
               <div className="text-sm text-gray-600">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredPatients.length)} of {filteredPatients.length} patients
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalPatients)} of {totalPatients} patients
               </div>
               
               <div className="flex items-center gap-2">

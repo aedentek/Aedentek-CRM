@@ -322,36 +322,25 @@ const PatientList: React.FC = () => {
   });
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
   const rowsPerPage = 10;
 
+  // Load patients on component mount
   useEffect(() => {
     loadPatients();
   }, []);
 
-  // Refresh data when window gains focus (user returns from another tab/page)
+  // Reload data when pagination or filters change  
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('🔄 Window focused, refreshing patient data...');
+    if (currentPage > 1 || searchTerm || (statusFilter && statusFilter !== 'All')) {
       loadPatients();
-    };
+    }
+  }, [currentPage, searchTerm, statusFilter]);
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  // Refresh data every 30 seconds to catch any updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing patient data...');
-      loadPatients();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
+  // Keep the original filter effect for client-side processing
   useEffect(() => {
     filterPatients();
-    setCurrentPage(1); // Reset to first page on filter/search change
   }, [patients, searchTerm, statusFilter, filterMonth, filterYear]);
 
   // Removed auto-navigation to ensure page always starts at 1
@@ -366,23 +355,60 @@ const PatientList: React.FC = () => {
       setLoading(true);
     }
     try {
-      console.log('🔗 Loading patients via unified API...');
-      // Try unified API first, fall back to DatabaseService if needed
-      let data;
-      try {
-        data = await patientsAPI.getAll();
-        console.log('✅ Patients loaded via unified API:', data.length, 'patients');
-      } catch (apiError) {
-        console.warn('⚠️ Unified API failed, falling back to DatabaseService:', apiError.message);
-        data = await DatabaseService.getAllPatients();
-        console.log('✅ Patients loaded via DatabaseService:', data.length, 'patients');
+      console.log('🔗 Loading patients with backend pagination...', {
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+        status: statusFilter === 'All' ? '' : statusFilter
+      });
+      
+      // Build pagination parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: rowsPerPage.toString()
+      });
+      
+      // Add search if provided
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
       }
       
-      console.log('📋 Raw patient data from database:', data);
+      // Add status filter if not "All"
+      if (statusFilter && statusFilter !== 'All') {
+        params.append('status', statusFilter);
+      }
       
-      if (!data || !Array.isArray(data)) {
+      // Make direct API call with pagination instead of using patientsAPI.getAll()
+      const apiUrl = `${import.meta.env.VITE_API_URL}/patients?${params.toString()}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Backend pagination response:', data);
+      
+      // Extract patient array and pagination metadata
+      let patients_array;
+      if (Array.isArray(data)) {
+        // Legacy: Direct array response
+        patients_array = data;
+        setTotalPages(1);
+        setTotalPatients(data.length);
+      } else if (data && Array.isArray(data.data)) {
+        // Backend pagination response format
+        patients_array = data.data;
+        const pagination = data.pagination || {};
+        setTotalPages(pagination.pages || 1);
+        setTotalPatients(parseInt(pagination.total) || 0);
+        console.log('📊 Pagination metadata:', pagination);
+        console.log('👥 Page', currentPage, 'of', pagination.pages, '- showing', patients_array.length, 'of', pagination.total, 'total patients');
+      } else {
         console.warn('⚠️ Invalid patient data received:', data);
         setPatients([]);
+        setTotalPages(1);
+        setTotalPatients(0);
         toast({
           title: "Warning",
           description: "No patient data received from server",
@@ -391,7 +417,7 @@ const PatientList: React.FC = () => {
         return;
       }
 
-      const parsedPatients = data.map((p: any) => {
+      const parsedPatients = patients_array.map((p: any) => {
         // Debug: Log patient data to see what format dates are in
         if (p.id === 102 || p.id === 103) { // Debug first few patients
           console.log(`🔍 DEBUG Patient ${p.id}:`, {
@@ -1718,7 +1744,6 @@ const PatientList: React.FC = () => {
                 </TableRow>
               ) : (
                 filteredPatients
-                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
                   .map((patient, idx) => (
                     <TableRow key={patient.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
                       <TableCell className="px-2 sm:px-3 lg:px-4 py-2 lg:py-3 text-center text-xs sm:text-sm whitespace-nowrap">{(currentPage - 1) * rowsPerPage + idx + 1}</TableCell>
@@ -1734,8 +1759,8 @@ const PatientList: React.FC = () => {
                         <button 
                           onClick={() => {
                             try {
-                              // Use raw numeric ID for navigation - the PatientBiodata component will handle the format
-                              const patientIdForRoute = patient.id;
+                              // Use numeric originalId for navigation - backend expects numeric IDs
+                              const patientIdForRoute = patient.originalId || patient.id;
                               console.log('🔗 Button clicked for patient details:', {
                                 patientId: patient.id,
                                 originalId: patient.originalId,
@@ -1827,16 +1852,16 @@ const PatientList: React.FC = () => {
         </div>
 
         {/* Mobile Responsive Pagination */}
-        {filteredPatients.length > rowsPerPage && (
+        {totalPages > 1 && (
           <div className="crm-pagination-container">
             {/* Pagination Info */}
             <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
               <span className="hidden sm:inline">
-                Page {currentPage} of {Math.ceil(filteredPatients.length / rowsPerPage)} 
-                ({filteredPatients.length} total patients)
+                Page {currentPage} of {totalPages} 
+                ({totalPatients} total patients)
               </span>
               <span className="sm:hidden">
-                {currentPage} / {Math.ceil(filteredPatients.length / rowsPerPage)}
+                {currentPage} / {totalPages}
               </span>
             </div>
             
@@ -1855,8 +1880,7 @@ const PatientList: React.FC = () => {
               
               {/* Page Numbers for Desktop */}
               <div className="hidden sm:flex items-center gap-1">
-                {Array.from({ length: Math.min(5, Math.ceil(filteredPatients.length / rowsPerPage)) }, (_, i) => {
-                  const totalPages = Math.ceil(filteredPatients.length / rowsPerPage);
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNumber;
                   
                   if (totalPages <= 5) {
@@ -1890,8 +1914,8 @@ const PatientList: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPatients.length / rowsPerPage), p + 1))}
-                disabled={currentPage === Math.ceil(filteredPatients.length / rowsPerPage)}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
                 className="bg-white hover:bg-gray-50 text-gray-600 border-gray-300 text-xs sm:text-sm px-2 sm:px-3"
               >
                 <span className="hidden sm:inline">Next</span>

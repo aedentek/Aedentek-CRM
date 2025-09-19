@@ -78,6 +78,10 @@ const PatientMedicalRecord: React.FC = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  
+  // Backend pagination state
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
   const [statusFilter, setStatusFilter] = useState('all');
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isUpdatingRecords, setIsUpdatingRecords] = useState(false);
@@ -424,16 +428,48 @@ const PatientMedicalRecord: React.FC = () => {
   const loadPatients = async () => {
     try {
       setIsLoadingPatients(true);
-      console.log('Loading patients from DatabaseService...');
-      const data = await DatabaseService.getAllPatients();
-      console.log('Patients loaded:', data.length);
       
-      const formattedPatients = data.map((p: any) => ({
-        ...p,
-        id: p.id.toString()
-      }));
+      const patientsPerPage = 10; // Define this locally for patient pagination
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: patientsPerPage.toString(),
+      });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+
+      console.log('Loading patients with pagination...');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patients?${params}`);
       
-      setPatients(formattedPatients);
+      if (!response.ok) {
+        throw new Error('Failed to load patients');
+      }
+
+      const data = await response.json();
+      console.log('Patients loaded:', data.data?.length || 0);
+      
+      if (data.data) {
+        const formattedPatients = data.data.map((p: any) => ({
+          ...p,
+          id: p.id.toString()
+        }));
+        
+        setPatients(formattedPatients);
+        setTotalPatients(data.total || 0);
+        setTotalPages(Math.ceil((data.total || 0) / patientsPerPage));
+        
+        return formattedPatients; // Return the data for immediate use
+      } else {
+        setPatients([]);
+        setTotalPatients(0);
+        setTotalPages(1);
+        return [];
+      }
     } catch (error) {
       console.error('Error loading patients:', error);
       toast({
@@ -441,6 +477,7 @@ const PatientMedicalRecord: React.FC = () => {
         description: "Failed to load patients. Please try again.",
         variant: "destructive",
       });
+      return [];
     } finally {
       setIsLoadingPatients(false);
     }
@@ -483,47 +520,9 @@ const PatientMedicalRecord: React.FC = () => {
     setIsLoadingRecords(true);
     
     try {
-      // Load patients and medical records separately without resetting filters
-      const [patientsData, medicalRecordsData] = await Promise.all([
-        DatabaseService.getAllPatients(),
-        MedicalRecordService.getAllPatientMedicalRecords()
-      ]);
-
-      // Process patients
-      const formattedPatients = patientsData.map((p: any) => {
-        // Safely parse dates with validation - use created_at as fallback for admission date
-        const parseDate = (dateValue: any) => {
-          if (!dateValue) return null;
-          const parsedDate = new Date(dateValue);
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        };
-        
-        // Get admission date with fallback to created_at
-        const getAdmissionDate = (p: any) => {
-          return parseDate(p.admissionDate || p.admission_date) || parseDate(p.created_at) || null;
-        };
-        
-        return {
-          id: p.id.toString(),
-          name: p.name,
-          age: p.age || '',
-          gender: p.gender || '',
-          contactNumber: p.contactNumber || p.phone || '',
-          address: p.address || '',
-          locality: p.locality || '',
-          city: p.city || '',
-          bloodGroup: p.bloodGroup || '',
-          occupation: p.occupation || '',
-          guardian: p.guardian || '',
-          guardianPhone: p.guardianPhone || '',
-          referredBy: p.referredBy || '',
-          uhid: p.uhid || '',
-          photo: p.photo || '',
-          photoUrl: p.photoUrl || '',
-          status: p.status || 'Active',
-          admissionDate: getAdmissionDate(p)
-        };
-      });
+      // Load patients using backend pagination and medical records separately without resetting filters
+      const patientsData = await loadPatients();
+      const medicalRecordsData = await MedicalRecordService.getAllPatientMedicalRecords();
 
       // Process medical records
       const processedMedicalRecords = medicalRecordsData.map((record: any) => ({
@@ -540,7 +539,7 @@ const PatientMedicalRecord: React.FC = () => {
       const patientListRecords: MedicalRecord[] = [];
       
       // For ALL patients, create basic patient registration entries for main table display
-      formattedPatients.forEach(patient => {
+      patientsData.forEach(patient => {
         // Find the latest medical record for this patient (if any)
         const latestMedicalRecord = processedMedicalRecords
           .filter(record => String(record.patientId) === String(patient.id))
@@ -577,7 +576,6 @@ const PatientMedicalRecord: React.FC = () => {
         return aId - bId; // Ascending order
       });
 
-      setPatients(formattedPatients);
       setMedicalRecords(processedMedicalRecords);
       setRecords(patientListRecords);
       
@@ -617,47 +615,9 @@ const PatientMedicalRecord: React.FC = () => {
     setCurrentPage(1);
     
     try {
-      // First load patients and medical records separately 
-      const [patientsData, medicalRecordsData] = await Promise.all([
-        DatabaseService.getAllPatients(),
-        MedicalRecordService.getAllPatientMedicalRecords()
-      ]);
-
-      // Process patients
-      const formattedPatients = patientsData.map((p: any) => {
-        // Safely parse dates with validation - use created_at as fallback for admission date
-        const parseDate = (dateValue: any) => {
-          if (!dateValue) return null;
-          const parsedDate = new Date(dateValue);
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        };
-        
-        // Get admission date with fallback to created_at
-        const getAdmissionDate = (p: any) => {
-          return parseDate(p.admissionDate || p.admission_date) || parseDate(p.created_at) || null;
-        };
-        
-        return {
-          id: p.id.toString(),
-          name: p.name,
-          age: p.age || '',
-          gender: p.gender || '',
-          contactNumber: p.contactNumber || p.phone || '',
-          address: p.address || '',
-          locality: p.locality || '',
-          city: p.city || '',
-          bloodGroup: p.bloodGroup || '',
-          occupation: p.occupation || '',
-          guardian: p.guardian || '',
-          guardianPhone: p.guardianPhone || '',
-          referredBy: p.referredBy || '',
-          uhid: p.uhid || '',
-          photo: p.photo || '',
-          photoUrl: p.photoUrl || '',
-          status: p.status || 'Active',
-          admissionDate: getAdmissionDate(p)
-        };
-      });
+      // Load patients using backend pagination and medical records separately 
+      const patientsData = await loadPatients();
+      const medicalRecordsData = await MedicalRecordService.getAllPatientMedicalRecords();
 
       // Process medical records
       const processedMedicalRecords = medicalRecordsData.map((record: any) => {
@@ -694,7 +654,7 @@ const PatientMedicalRecord: React.FC = () => {
       const patientListRecords: MedicalRecord[] = [];
       
       // For ALL patients, create basic patient registration entries for main table display
-      formattedPatients.forEach(patient => {
+      patientsData.forEach(patient => {
         // Find the latest medical record for this patient (if any)
         const latestMedicalRecord = processedMedicalRecords
           .filter(record => String(record.patientId) === String(patient.id))
@@ -731,14 +691,13 @@ const PatientMedicalRecord: React.FC = () => {
         return aId - bId; // Ascending order
       });
 
-      setPatients(formattedPatients);
       setMedicalRecords(processedMedicalRecords);
       setRecords(patientListRecords);
       
       console.log('Patient list with medical records loaded successfully:', patientListRecords.length);
       console.log('Actual medical records loaded:', processedMedicalRecords.length);
       console.log('Medical records sample:', processedMedicalRecords.slice(0, 2));
-      console.log('Patients sample:', formattedPatients.slice(0, 2));
+      console.log('Patients sample:', patients.slice(0, 2));
     } catch (error) {
       console.error('Error loading data:', error);
       setPatients([]);
@@ -758,6 +717,13 @@ const PatientMedicalRecord: React.FC = () => {
   useEffect(() => {
     refreshData();
   }, []);
+
+  // Load patients when pagination parameters change
+  useEffect(() => {
+    if (patients.length > 0 || currentPage > 1) { // Only reload if we have patients or not on first page
+      loadPatients();
+    }
+  }, [currentPage, searchTerm, statusFilter]);
 
   // Handle keyboard events for image modal
   useEffect(() => {
@@ -836,7 +802,7 @@ const PatientMedicalRecord: React.FC = () => {
     return filtered;
   }, [records, patients, searchTerm, typeFilter, statusFilter, filterMonth, filterYear]);
 
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+  const totalRecordPages = Math.ceil(filteredRecords.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentRecords = filteredRecords.slice(startIndex, endIndex);
@@ -1623,9 +1589,9 @@ const PatientMedicalRecord: React.FC = () => {
                 >
                   Previous
                 </Button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, totalRecordPages) }, (_, i) => {
                   const pageNumber = i + Math.max(1, currentPage - 2);
-                  if (pageNumber > totalPages) return null;
+                  if (pageNumber > totalRecordPages) return null;
                   return (
                     <Button
                       key={pageNumber}
@@ -1641,8 +1607,8 @@ const PatientMedicalRecord: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(Math.min(totalRecordPages, currentPage + 1))}
+                  disabled={currentPage === totalRecordPages}
                 >
                   Next
                 </Button>
